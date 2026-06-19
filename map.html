@@ -1,0 +1,3144 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>도시의 목소리</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;800&family=Nanum+Myeongjo:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --wall:      #8e8e86;
+    --wall-dark: #5e5e58;
+    --wall-lite: #b8b8b0;
+    --ink:       #1a1a14;
+    --cream:     #f0ede4;
+    --tape:      rgba(230,220,185,0.55);
+    --red:       #c8342a;
+    --shadow:    rgba(0,0,0,0.45);
+  }
+
+  body {
+    background: var(--wall);
+    color: var(--cream);
+    font-family: 'Courier New', 'Menlo', monospace;
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+  }
+
+  #wall-bg {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    pointer-events: none;
+  }
+
+  /* 벽 위에 살짝 어둡게 올려서 아이콘이 더 잘 보이게 */
+  #wall-bg::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.08);
+  }
+
+  /* ── EMOTION PANEL ─────────────────────────────────────────── */
+  .emo-panel {
+    position: fixed;
+    left: 0; top: 0;
+    height: 100vh;
+    width: 320px;
+    background: transparent;
+    z-index: 25;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* 로고 헤더 */
+  .emo-panel-logo {
+    padding: 22px 28px 20px 12px;
+    flex-shrink: 0;
+  }
+  .emo-panel-logo img {
+    width: 155px;
+    height: auto;
+    display: block;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .emo-panel-logo img:hover { opacity: 0.7; }
+
+  /* About 패널 — 아이콘 팝업과 동일한 스타일 */
+  .about-panel {
+    position: fixed; top: 0; right: 0; bottom: 0;
+    width: 40vw;
+    background: #0a0a0a;
+    border-left: 1px solid #fff;
+    z-index: 45;
+    pointer-events: none;
+    transform: translateX(100%);
+    transition: transform 0.65s cubic-bezier(0.16,1,0.3,1);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  .about-panel.open { transform: translateX(0); pointer-events: all; }
+
+  .about-panel-close {
+    position: fixed; top: 0; right: 40vw;
+    width: 44px; height: 44px;
+    background: #0a0a0a; border: 1px solid #fff;
+    color: #fff; font-size: 18px; font-weight: 300;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none;
+    transition: transform 0.65s cubic-bezier(0.16,1,0.3,1), opacity 0.2s, background 0.1s;
+    z-index: 46;
+  }
+  body.about-open .about-panel-close { opacity: 1; pointer-events: all; }
+  .about-panel-close:hover { background: #222; }
+
+  .about-header {
+    flex: none;
+    display: grid; grid-template-columns: 1fr 1fr;
+    padding: 16px 32px;
+    background: #fff;
+    border-bottom: 1px solid #fff;
+  }
+  .about-header-kr {
+    font-size: clamp(16px, 2.2vw, 24px);
+    font-family: 'Noto Sans KR', sans-serif;
+    font-weight: 800; color: #000;
+    letter-spacing: -0.03em; line-height: 1.25; margin: 0;
+    padding-right: 20px; border-right: 1px solid #000;
+  }
+  .about-header-en {
+    font-size: clamp(16px, 2.2vw, 24px);
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-weight: 700; color: #000;
+    line-height: 1.25; margin: 0; padding-left: 20px;
+  }
+  .about-body {
+    flex: 1; min-height: 0; overflow-y: auto;
+    padding: 20px 32px 32px;
+    font-size: 11.5px;
+    font-family: 'Noto Sans KR', sans-serif;
+    color: rgba(255,255,255,0.82);
+    line-height: 1.9;
+    word-break: keep-all;
+    border-top: 1px solid #fff;
+    column-count: 2;
+    column-gap: 24px;
+    column-rule: 1px solid rgba(255,255,255,0.07);
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.08) transparent;
+  }
+  .about-body p { margin: 0 0 12px; }
+  .about-col-break { break-after: column; }
+  .about-divider {
+    border: none; border-top: 1px solid rgba(255,255,255,0.15);
+    margin: 14px 0;
+  }
+  .about-key {
+    display: inline;
+    border: 1px solid rgba(255,255,255,0.6);
+    color: #fff;
+    padding: 1px 5px; border-radius: 2px;
+    font-weight: 600; white-space: nowrap;
+  }
+  .about-emo-grid { margin: 0; }
+  .about-emo-item {
+    display: block;
+    font-size: 11.5px; line-height: 1.9;
+    margin-bottom: 2px;
+  }
+  .about-emo-tag {
+    display: inline-block; flex-shrink: 0;
+    padding: 0px 4px; font-weight: 700; font-size: 9px;
+    border: 1px solid currentColor;
+    vertical-align: middle;
+  }
+  .about-emo-desc { color: rgba(255,255,255,1); font-size: 11.5px; margin-left: 6px; }
+  .about-emo-item[data-e="안내"] .about-emo-tag  { background:#00C8E6; color:#0a0a0a; border-color:#00C8E6; }
+  .about-emo-item[data-e="경고"] .about-emo-tag  { background:#FF4D2E; color:#0a0a0a; border-color:#FF4D2E; }
+  .about-emo-item[data-e="위협"] .about-emo-tag  { background:#FF2D78; color:#0a0a0a; border-color:#FF2D78; }
+  .about-emo-item[data-e="명령"] .about-emo-tag  { background:#8B5CF6; color:#0a0a0a; border-color:#8B5CF6; }
+  .about-emo-item[data-e="호소"] .about-emo-tag  { background:#00C896; color:#0a0a0a; border-color:#00C896; }
+  .about-emo-item[data-e="유머"] .about-emo-tag  { background:#FFD200; color:#0a0a0a; border-color:#FFD200; }
+  .about-emo-item[data-e="환대"] .about-emo-tag  { background:#00E07A; color:#0a0a0a; border-color:#00E07A; }
+  .about-credit-row {
+    margin: 0;
+    font-size: 11.5px; line-height: 1.9;
+  }
+  .about-credit-row dt { color: rgba(255,255,255,1); font-weight: 600; display: inline; }
+  .about-credit-row dt::after { content: " — "; }
+  .about-credit-row dd { display: inline; margin: 0; color: rgba(255,255,255,1); }
+  .about-credit-row dd::after { content: "\A"; white-space: pre; }
+  .about-credit-row dd::after { content: "\A"; white-space: pre; }
+
+  /* 감정 카테고리 목록 */
+  .emo-list {
+    flex-shrink: 0;
+    padding-bottom: 8px;
+  }
+
+  .emo-row {
+    display: flex;
+    width: fit-content;
+    align-items: center;
+    gap: 10px;
+    padding: 4px 10px 4px 8px;
+    margin: 4px 16px;
+    cursor: pointer;
+    background: var(--emo-color);
+    border: 1px solid #000;
+    transition: background 0.12s, color 0.12s;
+  }
+  .emo-row:hover {
+    background: #000;
+    border-color: #000;
+  }
+  .emo-row:hover .emo-kr,
+  .emo-row:hover .emo-en { color: var(--emo-color); }
+
+  /* active 행: 채운 상태 유지 */
+  .emo-row.active { background: var(--emo-color); }
+  .emo-row.active .emo-kr,
+  .emo-row.active .emo-en { color: #0a0a0a !important; }
+
+  /* 제목 목록 열렸을 때 — 활성 카테고리 태그 반전 */
+  body.titles-open .emo-row.active { background: #0a0a0a !important; border-color: var(--emo-color) !important; }
+  body.titles-open .emo-row.active .emo-kr,
+  body.titles-open .emo-row.active .emo-en { color: var(--emo-color) !important; }
+
+  .emo-dot { display: none; }
+
+  /* 한국어 + 영어를 같은 행에 나란히 */
+  .emo-row-text {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    min-width: 0;
+  }
+  .emo-kr {
+    font-size: 13.5px;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-weight: 700;
+    color: #0a0a0a;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    white-space: nowrap;
+    transition: color 0.12s;
+  }
+  .emo-en {
+    font-size: 13.5px;
+    font-family: 'Helvetica Neue', 'Arial', sans-serif;
+    font-weight: 400;
+    color: #0a0a0a;
+    letter-spacing: 0em;
+    line-height: 1;
+    white-space: nowrap;
+    transition: color 0.12s;
+  }
+  .emo-count {
+    font-size: 11px;
+    font-family: 'Helvetica Neue', 'Arial', sans-serif;
+    font-weight: 400;
+    color: #0a0a0a;
+    opacity: 0.6;
+    line-height: 1;
+    white-space: nowrap;
+    transition: color 0.12s, opacity 0.12s;
+  }
+  .emo-row:hover .emo-count { color: var(--emo-color); opacity: 1; }
+  .emo-row.active .emo-count { color: #0a0a0a !important; opacity: 0.7; }
+  body.titles-open .emo-row.active .emo-count { color: var(--emo-color) !important; opacity: 0.7; }
+
+  /* 구분선 — 카테고리 선택 시에만 표시 */
+  .emo-divider {
+    height: 1px;
+    background: rgba(255,255,255,0.1);
+    margin: 10px 0 0;
+    flex-shrink: 0;
+    display: none;
+  }
+  .emo-divider.visible { display: block; }
+
+  /* 제목 목록 영역 — 기본 숨김, 카테고리 선택 시 표시 */
+  .emo-titles {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px 16px 24px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.08) transparent;
+    display: none;
+  }
+  .emo-titles.visible { display: block; }
+  .emo-titles::-webkit-scrollbar { width: 3px; }
+  .emo-titles::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
+
+  /* 아이템: 텍스트에 딱 맞는 테두리 박스 → 호버 시 감정 색으로 채움 */
+  .emo-title-item {
+    display: block;
+    width: fit-content;
+    padding: 3px 7px;
+    margin: 3px 0;
+    cursor: pointer;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 11px;
+    font-weight: 400;
+    line-height: 1.4;
+    word-break: keep-all;
+    background: transparent;
+    border: 1px solid currentColor;
+    transition: background 0.1s, color 0.1s;
+  }
+  /* 감정별 기본: 색 채운 박스 (반전이 기본) */
+  .emo-title-item[data-emotion="안내"] { background: #00C8E6; color: #0a0a0a; }
+  .emo-title-item[data-emotion="경고"] { background: #FF4D2E; color: #0a0a0a; }
+  .emo-title-item[data-emotion="위협"] { background: #FF2D78; color: #0a0a0a; }
+  .emo-title-item[data-emotion="명령"] { background: #8B5CF6; color: #0a0a0a; }
+  .emo-title-item[data-emotion="호소"] { background: #00C896; color: #0a0a0a; }
+  .emo-title-item[data-emotion="유머"] { background: #FFD200; color: #0a0a0a; }
+  .emo-title-item[data-emotion="환대"] { background: #00E07A; color: #0a0a0a; }
+  /* 호버: 블랙 배경 + 감정 색 글자 */
+  .emo-title-item[data-emotion="안내"]:hover  { background: #000; color: #00C8E6; }
+  .emo-title-item[data-emotion="경고"]:hover  { background: #000; color: #FF4D2E; }
+  .emo-title-item[data-emotion="위협"]:hover  { background: #000; color: #FF2D78; }
+  .emo-title-item[data-emotion="명령"]:hover  { background: #000; color: #8B5CF6; }
+  .emo-title-item[data-emotion="호소"]:hover  { background: #000; color: #00C896; }
+  .emo-title-item[data-emotion="유머"]:hover  { background: #000; color: #FFD200; }
+  .emo-title-item[data-emotion="환대"]:hover  { background: #000; color: #00E07A; }
+  /* active: 채운 상태 유지 */
+  .emo-title-item.active[data-emotion="안내"]  { background: #00C8E6; color: #0a0a0a; }
+  .emo-title-item.active[data-emotion="경고"]  { background: #FF4D2E; color: #0a0a0a; }
+  .emo-title-item.active[data-emotion="위협"]  { background: #FF2D78; color: #0a0a0a; }
+  .emo-title-item.active[data-emotion="명령"]  { background: #8B5CF6; color: #0a0a0a; }
+  .emo-title-item.active[data-emotion="호소"]  { background: #00C896; color: #0a0a0a; }
+  .emo-title-item.active[data-emotion="유머"]  { background: #FFD200; color: #0a0a0a; }
+  .emo-title-item.active[data-emotion="환대"]  { background: #00E07A; color: #0a0a0a; }
+
+
+  /* ── MAP DOTS ──────────────────────────────────────────────── */
+  .dot-layer {
+    position: fixed;
+    top: 0; bottom: 0;
+    left: 320px; right: 0;
+    z-index: 5;
+  }
+
+  .map-dot {
+    position: absolute;
+    transform-origin: center bottom;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+
+  .map-dot .dot-inner {
+    position: relative;
+    transition: transform 0.15s cubic-bezier(0.16,1,0.3,1);
+  }
+
+  .map-dot .dot-inner img {
+    display: block;
+    max-width: clamp(143px, 26.5vw, 284px);
+    max-height: clamp(204px, 38.9vw, 406px);
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.5));
+    transition: filter 0.28s ease;
+  }
+
+  /* 호버 — 감정별 글로우 */
+  .map-dot:hover .dot-inner img {
+    filter: drop-shadow(0 0 6px var(--glow)) drop-shadow(0 0 20px var(--glow-mid)) drop-shadow(2px 4px 8px rgba(0,0,0,0.45));
+  }
+  .map-dot[data-emotion="안내"]:hover  { --glow: rgba(0,200,230,1);   --glow-mid: rgba(0,200,230,0.55); }
+  .map-dot[data-emotion="경고"]:hover  { --glow: rgba(255,77,46,1);   --glow-mid: rgba(255,77,46,0.55); }
+  .map-dot[data-emotion="위협"]:hover  { --glow: rgba(255,45,120,1);  --glow-mid: rgba(255,45,120,0.55); }
+  .map-dot[data-emotion="명령"]:hover  { --glow: rgba(139,92,246,1);  --glow-mid: rgba(139,92,246,0.55); }
+  .map-dot[data-emotion="호소"]:hover  { --glow: rgba(0,200,150,1);   --glow-mid: rgba(0,200,150,0.55); }
+  .map-dot[data-emotion="유머"]:hover  { --glow: rgba(255,210,0,1);   --glow-mid: rgba(255,210,0,0.55); }
+  .map-dot[data-emotion="환대"]:hover  { --glow: rgba(0,224,122,1);   --glow-mid: rgba(0,224,122,0.55); }
+
+  /* 누끼 없을 때 — 빨간 스프레이 점 */
+  .map-dot .dot-inner.no-cutout {
+    width: 11px;
+    height: 11px;
+    background: var(--red);
+    border-radius: 50%;
+    box-shadow: 0 0 8px 2px rgba(200,52,42,0.35);
+    filter: none;
+  }
+  .map-dot .dot-inner.no-cutout::before { display: none; }
+
+  .map-dot:hover .dot-inner {
+    transform: scale(1.25) translateY(-4px);
+    z-index: 10;
+  }
+
+  .map-dot.active .dot-inner img {
+    filter: drop-shadow(0 0 8px rgba(200,52,42,0.75)) drop-shadow(2px 4px 6px rgba(0,0,0,0.5));
+  }
+
+  .map-dot.faded { opacity: 0.15; pointer-events: none; }
+
+
+  /* ── DETAIL PANEL — 오른쪽 슬라이드인 ─────────────────────── */
+  .panel {
+    position: fixed;
+    top: 0; right: 0; bottom: 0;
+    width: 40vw;
+    background: #0a0a0a;
+    border-left: 1px solid #fff;
+    z-index: 40;
+    pointer-events: none;
+    transform: translateX(100%);
+    transition: transform 0.65s cubic-bezier(0.16,1,0.3,1);
+    display: flex;
+    overflow: visible;
+  }
+  .panel.open {
+    transform: translateX(0);
+    pointer-events: all;
+  }
+
+  /* 메인 콘텐츠 영역 — 스크롤 없는 flex column */
+  .panel-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  /* 닫기 버튼 — fixed, 패널 상태에 따라 위치 전환 */
+  .panel-close {
+    position: fixed;
+    top: 0;
+    right: 40vw;                /* 메인 패널 왼쪽 상단 */
+    width: 44px;
+    height: 44px;
+    background: #0a0a0a;
+    border: 1px solid #fff;
+    color: #fff;
+    font-size: 18px;
+    font-weight: 300;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.4s cubic-bezier(0.16,1,0.3,1), opacity 0.2s, background 0.1s;
+    z-index: 50;
+  }
+  body.panel-open .panel-close  { opacity: 1; pointer-events: all; }
+  body.kw-open   .panel-close  { transform: translateX(-20vw); } /* GPU 가속 이동 */
+  .panel-close:hover { background: #222; }
+
+  /* 헤더 — 2단: KR 제목(감정 색) | EN 감정명 */
+  .panel-header {
+    flex: none;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    padding: 16px 32px 16px;
+    background: var(--panel-color, #fff);
+    border-bottom: 1px solid #fff;
+  }
+  .panel-title-kr {
+    font-size: clamp(16px, 2.2vw, 24px);
+    font-family: 'Noto Sans KR', sans-serif;
+    font-weight: 800;
+    color: #000;
+    letter-spacing: -0.03em;
+    line-height: 1.25;
+    word-break: keep-all;
+    margin: 0;
+    padding-right: 20px;
+    border-right: 1px solid #000;
+  }
+  .panel-title-en {
+    font-size: clamp(16px, 2.2vw, 24px);
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-weight: 700;
+    color: #000;
+    line-height: 1.25;
+    margin: 0;
+    padding-left: 20px;
+  }
+
+  /* 이미지 — 중앙 정렬, 배경 없음 */
+  .panel-photo {
+    flex: 2.2;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px 32px 12px;
+    overflow: hidden;
+  }
+  .panel-photo img {
+    display: block;
+    width: auto;
+    max-width: 100%;
+    height: 100%;
+    max-height: 100%;
+    object-fit: contain;
+  }
+
+  /* 본문 — 분석 텍스트 2단 */
+  .panel-analysis {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 20px 32px 32px;
+    font-size: 11.5px;
+    font-family: 'Noto Sans KR', sans-serif;
+    color: rgba(255,255,255,0.82);
+    line-height: 1.9;
+    word-break: keep-all;
+    border-top: 1px solid #fff;
+    column-count: 2;
+    column-gap: 24px;
+    column-rule: 1px solid rgba(255,255,255,0.07);
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.08) transparent;
+  }
+  .panel-analysis::-webkit-scrollbar { width: 2px; }
+  .panel-analysis::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); }
+  .panel-analysis-key {
+    display: inline;
+    border: 1px solid var(--panel-color, rgba(255,255,255,0.5));
+    color: var(--panel-color, #fff);
+    padding: 1px 5px;
+    border-radius: 2px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+
+  /* 키워드 클릭 시 반전 */
+  .panel-analysis-key.kw-active {
+    background: var(--panel-color);
+    color: #0a0a0a;
+  }
+
+  /* 키워드 연관 팝업 — 메인 패널 바로 왼쪽 */
+  .keyword-panel {
+    position: fixed;
+    top: 0; bottom: 0;
+    right: 40vw;
+    width: 20vw;
+    background: #0a0a0a;
+    border-left: 1px solid #fff;
+    z-index: 38;
+    pointer-events: none;
+    transform: translateX(calc(100% + 40vw));
+    transition: transform 0.4s cubic-bezier(0.16,1,0.3,1);
+    overflow: hidden;
+  }
+  .keyword-panel.open { transform: translateX(0); pointer-events: all; }
+
+  .keyword-panel-list {
+    height: 100%;
+    overflow-y: scroll;
+    padding: 14px 20px 32px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.35) transparent;
+  }
+  .keyword-panel-list::-webkit-scrollbar { width: 4px; }
+  .keyword-panel-list::-webkit-scrollbar-track { background: transparent; }
+  .keyword-panel-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.35); border-radius: 0; }
+
+  /* 숨겨진 요소들 (구버전 호환) */
+  .panel-info, .panel-inference, #panel-notes-canvas { display: none !important; }
+
+  /* ── 모바일 — 패널 숨기고 지도 전체화면 ──────────────────────── */
+  @media (max-width: 639px) {
+    .emo-panel { display: none; }
+    .dot-layer { left: 0; }
+    .panel { overflow-y: auto; overflow-x: hidden; }
+    .panel-sheet { display: contents; }
+    .panel-sheet-handle { display: none; }
+  }
+
+  /* ── 파노라마 dot-layer (모바일 자이로 모드) ──────────────────────── */
+  .dot-layer.pano-mode {
+    position: fixed;
+    inset: auto;
+    top: 0; left: 0;
+    height: 100vh;
+    /* width는 JS에서 동적으로 설정 */
+    will-change: transform;
+  }
+
+  /* ── 자이로 힌트 버튼 ─────────────────────────────────────────────── */
+  .gyro-hint {
+    display: none;
+  }
+  @media (max-width: 639px) {
+    .gyro-hint {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      position: fixed;
+      bottom: 96px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 25;
+      background: rgba(17,17,17,0.82);
+      color: #f2efe8;
+      border: none;
+      border-radius: 24px;
+      padding: 9px 18px 9px 14px;
+      font-size: 12px;
+      font-family: 'Noto Sans KR', sans-serif;
+      letter-spacing: -0.01em;
+      cursor: pointer;
+      backdrop-filter: blur(8px);
+      transition: opacity 0.3s ease, transform 0.3s ease;
+      white-space: nowrap;
+    }
+    .gyro-hint svg { width: 18px; height: 18px; flex-shrink: 0; }
+    .gyro-hint.active {
+      opacity: 0;
+      pointer-events: none;
+      transform: translateX(-50%) translateY(10px);
+    }
+    /* 파노라마 모드일 때 스크롤 힌트 오버레이 */
+    .pano-edge {
+      position: fixed;
+      top: 0; bottom: 0;
+      width: 40px;
+      z-index: 6;
+      pointer-events: none;
+    }
+    .pano-edge.left  { left:  0; background: linear-gradient(to right, rgba(0,0,0,0.18), transparent); }
+    .pano-edge.right { right: 0; background: linear-gradient(to left,  rgba(0,0,0,0.18), transparent); }
+  }
+
+  /* 데스크탑 파노라마 엣지 (모바일과 동일하게) */
+  @media (min-width: 640px) {
+    .pano-edge {
+      position: fixed;
+      top: 0; bottom: 0;
+      width: 60px;
+      z-index: 6;
+      pointer-events: none;
+    }
+    .pano-edge.left  { left:  0; background: linear-gradient(to right, rgba(0,0,0,0.14), transparent); }
+    .pano-edge.right { right: 0; background: linear-gradient(to left,  rgba(0,0,0,0.14), transparent); }
+  }
+
+
+  /* ── 뷰 토글 버튼 (왼쪽) ───────────────────────────────────────────── */
+  .view-controls {
+    position: fixed;
+    left: 18px;
+    bottom: 24px;
+    z-index: 30;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .view-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 0;
+    border: 1px solid #fff;
+    background: #0a0a0a;
+    color: #fff;
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.1s, color 0.1s;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .view-btn:hover          { background: #fff; color: #0a0a0a; border-color: #0a0a0a; }
+  .view-btn.active         { background: #fff; color: #0a0a0a; border-color: #0a0a0a; }
+  .view-btn.active:hover   { background: #ddd; color: #0a0a0a; border-color: #0a0a0a; }
+
+  /* dots-glow 모드: 모든 dot에 감정 글로우 + 살짝 확대 */
+  body.dots-glow .map-dot:hover .dot-inner {
+    transform: scale(1.1) translateY(-2px);
+    z-index: 10;
+  }
+  body.dots-glow .map-dot[data-emotion="안내"] .dot-inner img { filter: drop-shadow(0 0 6px rgba(0,200,230,1))  drop-shadow(0 0 20px rgba(0,200,230,0.55)); }
+  body.dots-glow .map-dot[data-emotion="경고"] .dot-inner img { filter: drop-shadow(0 0 6px rgba(255,77,46,1))  drop-shadow(0 0 20px rgba(255,77,46,0.55)); }
+  body.dots-glow .map-dot[data-emotion="위협"] .dot-inner img { filter: drop-shadow(0 0 6px rgba(255,45,120,1)) drop-shadow(0 0 20px rgba(255,45,120,0.55)); }
+  body.dots-glow .map-dot[data-emotion="명령"] .dot-inner img { filter: drop-shadow(0 0 6px rgba(139,92,246,1)) drop-shadow(0 0 20px rgba(139,92,246,0.55)); }
+  body.dots-glow .map-dot[data-emotion="호소"] .dot-inner img { filter: drop-shadow(0 0 6px rgba(0,200,150,1))  drop-shadow(0 0 20px rgba(0,200,150,0.55)); }
+  body.dots-glow .map-dot[data-emotion="유머"] .dot-inner img { filter: drop-shadow(0 0 6px rgba(255,210,0,1))  drop-shadow(0 0 20px rgba(255,210,0,0.55)); }
+  body.dots-glow .map-dot[data-emotion="환대"] .dot-inner img { filter: drop-shadow(0 0 6px rgba(0,224,122,1))  drop-shadow(0 0 20px rgba(0,224,122,0.55)); }
+
+  /* dots-text 모드: 이미지 숨기고 텍스트 레이블 표시 */
+  .dot-label {
+    display: none;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 7px;
+    border: 1px solid currentColor;
+    white-space: nowrap;
+    pointer-events: none;
+    transition: background 0.1s, color 0.1s;
+  }
+  .dot-label[data-emotion="안내"] { background: #00C8E6; color: #0a0a0a; }
+  .dot-label[data-emotion="경고"] { background: #FF4D2E; color: #0a0a0a; }
+  .dot-label[data-emotion="위협"] { background: #FF2D78; color: #0a0a0a; }
+  .dot-label[data-emotion="명령"] { background: #8B5CF6; color: #0a0a0a; }
+  .dot-label[data-emotion="호소"] { background: #00C896; color: #0a0a0a; }
+  .dot-label[data-emotion="유머"] { background: #FFD200; color: #0a0a0a; }
+  .dot-label[data-emotion="환대"] { background: #00E07A; color: #0a0a0a; }
+  body.dots-text .map-dot .dot-inner img { display: none; }
+  body.dots-text .dot-label            { display: block; }
+  body.dots-text .map-dot:hover .dot-label[data-emotion="안내"] { background: #000; color: #00C8E6; }
+  body.dots-text .map-dot:hover .dot-label[data-emotion="경고"] { background: #000; color: #FF4D2E; }
+  body.dots-text .map-dot:hover .dot-label[data-emotion="위협"] { background: #000; color: #FF2D78; }
+  body.dots-text .map-dot:hover .dot-label[data-emotion="명령"] { background: #000; color: #8B5CF6; }
+  body.dots-text .map-dot:hover .dot-label[data-emotion="호소"] { background: #000; color: #00C896; }
+  body.dots-text .map-dot:hover .dot-label[data-emotion="유머"] { background: #000; color: #FFD200; }
+  body.dots-text .map-dot:hover .dot-label[data-emotion="환대"] { background: #000; color: #00E07A; }
+
+  /* ── 확대/축소 버튼 ──────────────────────────────────────────────────── */
+  .zoom-controls {
+    position: fixed;
+    right: 18px;
+    bottom: 24px;
+    z-index: 30;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .zoom-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 0;
+    border: 1px solid #fff;
+    background: #0a0a0a;
+    color: #fff;
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.1s;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .zoom-btn:hover  { background: #222; }
+  .zoom-btn:active { background: #333; }
+  .zoom-level-label {
+    text-align: center;
+    color: rgba(242,239,232,0.55);
+    font-size: 10px;
+    font-family: 'Noto Sans KR', sans-serif;
+    letter-spacing: 0.03em;
+    pointer-events: none;
+    line-height: 1;
+  }
+
+</style>
+</head>
+<body>
+
+<div id="wall-bg"></div>
+
+<!-- EMOTION PANEL -->
+<div class="emo-panel" id="emo-panel">
+
+  <!-- 로고 -->
+  <div class="emo-panel-logo">
+    <img src="logo.png" alt="도시의 목소리" id="logo-btn">
+  </div>
+
+  <!-- 감정 카테고리 목록 -->
+  <div class="emo-list" id="emo-list">
+    <div class="emo-row" data-tag="안내" style="--emo-color:#00C8E6">
+      <div class="emo-dot"></div>
+      <div class="emo-row-text">
+        <span class="emo-kr">안내</span>
+        <span class="emo-en">Guidance</span>
+      </div>
+    </div>
+    <div class="emo-row" data-tag="경고" style="--emo-color:#FF4D2E">
+      <div class="emo-dot"></div>
+      <div class="emo-row-text">
+        <span class="emo-kr">경고</span>
+        <span class="emo-en">Warning</span>
+      </div>
+    </div>
+    <div class="emo-row" data-tag="위협" style="--emo-color:#FF2D78">
+      <div class="emo-dot"></div>
+      <div class="emo-row-text">
+        <span class="emo-kr">위협</span>
+        <span class="emo-en">Threat</span>
+      </div>
+    </div>
+    <div class="emo-row" data-tag="명령" style="--emo-color:#8B5CF6">
+      <div class="emo-dot"></div>
+      <div class="emo-row-text">
+        <span class="emo-kr">명령</span>
+        <span class="emo-en">Command</span>
+      </div>
+    </div>
+    <div class="emo-row" data-tag="호소" style="--emo-color:#00C896">
+      <div class="emo-dot"></div>
+      <div class="emo-row-text">
+        <span class="emo-kr">호소</span>
+        <span class="emo-en">Appeal</span>
+      </div>
+    </div>
+    <div class="emo-row" data-tag="유머" style="--emo-color:#FFD200">
+      <div class="emo-dot"></div>
+      <div class="emo-row-text">
+        <span class="emo-kr">유머</span>
+        <span class="emo-en">Humor</span>
+      </div>
+    </div>
+    <div class="emo-row" data-tag="환대" style="--emo-color:#00E07A">
+      <div class="emo-dot"></div>
+      <div class="emo-row-text">
+        <span class="emo-kr">환대</span>
+        <span class="emo-en">Hospitality</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="emo-divider"></div>
+
+  <!-- 제목 목록 -->
+  <div class="emo-titles" id="emo-titles"></div>
+
+</div>
+
+
+<div class="dot-layer" id="dot-layer"></div>
+
+<!-- 파노라마 엣지 그라디언트 (모바일) -->
+<div class="pano-edge left"  id="pano-edge-l"></div>
+<div class="pano-edge right" id="pano-edge-r"></div>
+
+<!-- 자이로 힌트 버튼 (모바일 iOS) -->
+<button class="gyro-hint" id="gyro-hint" aria-label="자이로 탐색 활성화">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z" opacity=".3"/>
+    <path d="M12 8v4l3 3"/>
+    <path d="M5 3l2 2M19 3l-2 2M5 21l2-2M19 21l-2-2"/>
+  </svg>
+  기기를 기울여 탐색
+</button>
+
+
+<!-- About 패널 -->
+<button class="about-panel-close" id="about-panel-close">×</button>
+<div class="about-panel" id="about-panel">
+  <div class="about-header">
+    <span class="about-header-kr">도시의 목소리</span>
+    <span class="about-header-en">About</span>
+  </div>
+  <div class="about-body">
+<p>서울 곳곳에 붙어 있는 <span class="about-key">손글씨 안내문</span>과 <span class="about-key">공지문</span>들을 수집하고 기록하는 아카이브 프로젝트입니다. 인쇄된 공식 언어 사이에서, 누군가 직접 써 붙인 글씨들은 도시 거주자들의 가장 날것의 목소리를 담습니다.</p>
+
+    <p>이 지도는 <span class="about-key">횡적으로 이동</span>합니다. 골목길을 따라 걸으며 벽에 붙은 안내문을 하나씩 건너다보는 것처럼, 화면을 좌우로 드래그하며 도시의 표면을 가로질러 갑니다. 지나치듯 만나는 글씨들, 그 사이를 느리게 통과하는 경험.</p>
+
+    <p>각 안내문은 <span class="about-key">감정</span>·<span class="about-key">타이포그래피</span>·<span class="about-key">재료</span>·<span class="about-key">환경</span> 네 기준으로 태깅됩니다. 글씨가 굵고 눌린 손글씨일수록 감정의 온도는 높아지고, 그 감정은 쓰인 재료와 장소에도 흔적을 남깁니다. 볼펜으로 꾹꾹 눌러 쓴 경고문이 골판지 위에 있다는 것, 빨간 스프레이로 쓴 위협이 시멘트 벽에 있다는 것은 우연이 아닙니다.</p>
+
+    <hr class="about-divider">
+
+    <div class="about-emo-grid about-col-break">
+      <div class="about-emo-item" data-e="안내"><span class="about-emo-tag">안내</span><span class="about-emo-desc">정보를 전달한다. 차갑지 않게, 그러나 감정 없이.</span></div>
+      <div class="about-emo-item" data-e="경고"><span class="about-emo-tag">경고</span><span class="about-emo-desc">위험을 알린다. 글씨가 굵어지고 선이 굵어진다.</span></div>
+      <div class="about-emo-item" data-e="위협"><span class="about-emo-tag">위협</span><span class="about-emo-desc">단속과 처벌을 예고한다. 권력의 언어.</span></div>
+      <div class="about-emo-item" data-e="명령"><span class="about-emo-tag">명령</span><span class="about-emo-desc">하지 말라고 한다. 이유는 묻지 않는다.</span></div>
+      <div class="about-emo-item" data-e="호소"><span class="about-emo-tag">호소</span><span class="about-emo-desc">부탁한다. 때로는 간절하게, 때로는 지쳐서.</span></div>
+      <div class="about-emo-item" data-e="유머"><span class="about-emo-tag">유머</span><span class="about-emo-desc">웃긴다. 그래도 지켜줬으면 한다.</span></div>
+      <div class="about-emo-item" data-e="환대"><span class="about-emo-tag">환대</span><span class="about-emo-desc">어서 오세요, 와 주셔서 감사합니다.</span></div>
+    </div>
+
+    <p>이 프로젝트에서 <span class="about-key">서진</span>은 직접 발로 걸으며 안내문을 촬영하고, 감정과 맥락을 판단하고, 전체 시각화의 방향을 설계했습니다. <span class="about-key">AI(Claude)</span>는 수집된 이미지의 배경을 제거하고, 타이포그래피·재료·환경을 분석·태깅하며, 지도 인터페이스와 인터랙션을 코드로 구현했습니다. 사람이 도시를 읽고, AI가 그것을 지도 위에 펼쳤습니다.</p>
+
+    <p>워크플로우는 이렇게 흘렀습니다. 서진이 안내문 사진을 찍어오면, AI가 배경을 지우고 감정 태그와 분석 텍스트 초안을 뽑습니다. 서진이 그것을 읽고 수정하거나 승인합니다. 지도 인터페이스의 레이아웃과 인터랙션은 서진이 구체적인 방향을 말로 설명하면 AI가 코드로 옮겼습니다. 버그가 생기면 함께 디버깅했고, 글 쓰는 일도 나눴습니다. 어느 쪽이 더 많이 했다고 말하기 어렵고, 그게 이 프로젝트의 방식이었습니다.</p>
+
+    <p>손글씨 안내문은 도시에서 가장 솔직한 텍스트입니다. 디자인 없이 쓰인 글씨일수록 감정은 더 직접적으로 드러납니다. 이 아카이브는 그 무게를 기록합니다. 도시의 표면에 새겨진 사람들의 불편함과 배려와 피로와 유머를, 지도 위에 핀으로 고정하는 일.</p>
+
+    <hr class="about-divider">
+
+    <dl class="about-credit-row">
+      <dt>기획 · 수집 · 디자인</dt><dd>서진</dd>
+      <dt>AI 분석 · 개발</dt><dd>Claude (Anthropic)</dd>
+      <dt>아카이브 기간</dt><dd>2025–2026, 서울</dd>
+      <dt>스택</dt><dd>HTML · CSS · JavaScript · Supabase</dd>
+      <dt>과목</dt><dd>데이터 비주얼라이제이션(1), 2026년 1학기</dd>
+      <dt>지도교수</dt><dd>민세희 교수님</dd>
+    </dl>
+  </div>
+</div>
+
+<!-- 뷰 토글 버튼 (왼쪽) -->
+<div class="view-controls" id="view-controls">
+  <button class="view-btn" id="btn-glow" title="글로우 모드">○</button>
+  <button class="view-btn" id="btn-text" title="텍스트 모드">t</button>
+</div>
+
+<!-- 확대 / 축소 버튼 -->
+<div class="zoom-controls" id="zoom-controls">
+  <button class="zoom-btn" id="zoom-in"  aria-label="확대" title="확대">+</button>
+  <span class="zoom-level-label" id="zoom-label" style="display:none">100%</span>
+  <button class="zoom-btn" id="zoom-out" aria-label="축소" title="축소">−</button>
+</div>
+
+<!-- 키워드 연관 팝업 -->
+<button class="panel-close" id="panel-close">×</button>
+
+<div class="keyword-panel" id="keyword-panel">
+  <div class="keyword-panel-list" id="kw-list"></div>
+</div>
+
+<div class="panel" id="panel">
+
+  <!-- 메인 콘텐츠 -->
+  <div class="panel-main">
+
+    <!-- 헤더: KR 제목 | EN 감정명 -->
+    <div class="panel-header">
+      <h1 class="panel-title-kr" id="panel-text"></h1>
+      <h1 class="panel-title-en" id="panel-title-en"></h1>
+    </div>
+
+    <!-- 이미지 -->
+    <div class="panel-photo" id="panel-photo">
+      <img id="panel-img-el" src="" alt="">
+    </div>
+
+    <!-- 분석 텍스트 -->
+    <div class="panel-analysis" id="panel-analysis"></div>
+
+    <!-- 숨겨진 구버전 호환 요소 -->
+    <span id="panel-emotion" style="display:none"></span>
+    <div class="panel-info" id="panel-info" style="display:none"></div>
+    <div class="panel-inference" id="panel-inference" style="display:none">
+      <canvas id="panel-notes-canvas" width="220" height="140"></canvas>
+    </div>
+
+  </div><!-- /panel-main -->
+
+
+</div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────
+const data = [
+  {
+    id:"001",
+    file:"images/001.jpg",
+    emotion:"안내",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:37.561397, lng:126.995286,
+    typography:"인쇄 스티커",
+    material:"플라스틱 간판",
+    environment:"실외 / 상가 입구",
+    notes:"24시간 무인판매점 다판다 안내 간판"
+  },
+  {
+    id:"002",
+    file:"images/002.jpg",
+    emotion:"경고",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:37.526139, lng:126.699197,
+    typography:"인쇄+낙서",
+    material:"종이",
+    environment:"실내 / 지하주차장",
+    notes:"주차장 기둥에 담배꽁초 버리지 마세요 인쇄문 + 연필 낙서"
+  },
+  {
+    id:"003",
+    file:"images/003.jpg",
+    emotion:"안내",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:37.526281, lng:126.699456,
+    typography:"인쇄 스티커",
+    material:"스티커",
+    environment:"실외 / 골목",
+    notes:"초록 의류수거함에 붙은 각종 스티커들"
+  },
+  {
+    id:"004",
+    file:"images/004.jpg",
+    emotion:"위협",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:37.526314, lng:126.699617,
+    typography:"혼합(인쇄+낙서)",
+    material:"종이",
+    environment:"실내 / 지하주차장",
+    notes:"욕설 낙서 포함 금연 경고문"
+  },
+  {
+    id:"005",
+    file:"images/005.jpg",
+    emotion:"호소",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:37.570664, lng:127.009017,
+    typography:"손글씨",
+    material:"종이",
+    environment:"실외 / 골목",
+    notes:"성불(成佛)하여 살아있는 부처 되시기 초록 종이 안내문"
+  },
+  {
+    id:"006",
+    file:"images/006.jpg",
+    emotion:"유머",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:37.560772, lng:126.924331,
+    typography:"손글씨",
+    material:"포스트잇",
+    environment:"실내 / 차량",
+    notes:"차 안 포스트잇 — 만지면 개 흥분 눈으로만 -Sorry"
+  },
+  {
+    id:"007",
+    file:"images/007.jpg",
+    emotion:"명령",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:37.589844, lng:127.008019,
+    typography:"손글씨",
+    material:"나무판",
+    environment:"실외 / 골목",
+    notes:"검은 나무 판자에 흰 글씨 가져가지 마시오"
+  },
+  {
+    id:"009",
+    file:"images/009.jpg",
+    emotion:"안내",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:37.545881, lng:127.051339,
+    typography:"인쇄",
+    material:"현수막",
+    environment:"실외 / 상가",
+    notes:"국도모터스 현수막 — 하고자 하는 자는 발전이 있고 하지 않으려는 자는 핑계가 있다"
+  },
+  {
+    id:"010",
+    file:"images/010.jpg",
+    emotion:"호소",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:37.607033, lng:127.0568,
+    typography:"손글씨",
+    material:"포스트잇",
+    environment:"실외 / 길바닥",
+    notes:"에어팟 옆 포스트잇 주인을 찾습니다~"
+  },
+  {
+    id:"011",
+    file:"images/011.jpg",
+    emotion:"경고",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:37.544975, lng:127.054536,
+    typography:"인쇄 스티커",
+    material:"스티커",
+    environment:"실내 / 엘리베이터",
+    notes:"주의!! 엘리베이터 정원 6명 + 계단주의 경고 스티커"
+  },
+  {
+    id:"012",
+    file:"images/012.jpg",
+    emotion:"경고",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:37.571939, lng:126.975006,
+    typography:"혼합(손글씨+인쇄)",
+    material:"종이",
+    environment:"실내 / 전시장",
+    notes:"본 작품은 쿠션이 아니고 딱딱한 돌입니다 초록 원형 안내문"
+  },
+  {
+    id:"014",
+    file:"images/014.jpg",
+    emotion:"안내",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:37.301106, lng:127.009553,
+    typography:"손글씨",
+    material:"골판지",
+    environment:"실외 / 상가",
+    notes:"골판지 입간판 — 롯데 짝짝이 얼음 없음"
+  },
+  {
+    id:"015",
+    file:"images/015.jpg",
+    emotion:"안내",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:37.606819, lng:127.056564,
+    typography:"인쇄",
+    material:"종이",
+    environment:"실내 / 식당",
+    notes:"식권발매기 옆 식사가 종료되었습니다. 안내문"
+  },
+  {
+    id:"017",
+    file:"images/017.jpg",
+    emotion:"경고",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:37.477581, lng:126.955819,
+    typography:"인쇄+손글씨",
+    material:"종이(라미네이트)",
+    environment:"실외 / 골목",
+    notes:"동일 안내문 3개 나란히 붙어 있는 풍경"
+  },
+  {
+    id:"021",
+    file:"images/021.jpg",
+    emotion:"안내",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:37.576253, lng:126.986183,
+    typography:"혼합(인쇄+스티커)",
+    material:"스티커+금속판",
+    environment:"실외 / 상가",
+    notes:"당구장 입구 분홍 파랑 노랑 원형 스티커 + 포켓볼 PocketBall 안내"
+  },
+  {
+    id:"022",
+    file:"images/022.jpg",
+    emotion:"경고",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:35.157897, lng:129.124908,
+    typography:"손글씨",
+    material:"마포(천)",
+    environment:"실외 / 골목",
+    notes:"흰 마포대에 직접 쓴 쓰레기 버리는 사람 전선카메라 확인 후 경찰 신고"
+  },
+  {
+    id:"023",
+    file:"images/023.jpg",
+    emotion:"명령",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:35.155586, lng:129.066117,
+    typography:"인쇄",
+    material:"종이 포스터",
+    environment:"실외 / 골목",
+    notes:"인물 사진이 그려진 포스터 — 흡연금지 답.배.피.지.마."
+  },
+  {
+    id:"024",
+    file:"images/024.jpg",
+    emotion:"경고",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:35.158464, lng:129.066086,
+    typography:"손글씨",
+    material:"종이",
+    environment:"실외 / 상가 앞",
+    notes:"화분 사이 식물(꽃을) 함부로 가져가지 마세요 CCTV"
+  },
+  {
+    id:"025",
+    file:"images/025.jpg",
+    emotion:"위협",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:35.158536, lng:129.065978,
+    typography:"인쇄",
+    material:"종이 포스터",
+    environment:"실외 / 건물외벽",
+    notes:"눈 이미지 포스터 주차금지 지정주차장 위협적 시선"
+  },
+  {
+    id:"026",
+    file:"images/026.jpg",
+    emotion:"안내",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:35.231486, lng:129.081542,
+    typography:"인쇄",
+    material:"금속 패찰",
+    environment:"실외 / 건물 입구",
+    notes:"금속 패찰 문 닫혔음 / 시간: : ~ :"
+  },
+  {
+    id:"027",
+    file:"images/027.jpg",
+    emotion:"경고",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:35.178392, lng:129.121689,
+    typography:"손글씨",
+    material:"종이",
+    environment:"실내 / 가게 입구",
+    notes:"주방 문에 손글씨 담. 쓰레기 버리지 마세요"
+  },
+  {
+    id:"028",
+    file:"images/028.jpg",
+    emotion:"안내",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:35.178486, lng:129.122758,
+    typography:"인쇄",
+    material:"종이",
+    environment:"실외 / 가게 유리문",
+    notes:"알려드립니다 2024년 8월부터 매주 월요일은 정상영업합니다~~"
+  },
+  {
+    id:"029",
+    file:"images/029.jpg",
+    emotion:"경고",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:35.178092, lng:129.123,
+    typography:"손글씨",
+    material:"테이프+종이",
+    environment:"실외 / 카페 앞",
+    notes:"THANKYOU 테이프 위 반지 마세요!! 재산이다!! CCTV 작동중인다"
+  },
+  {
+    id:"030",
+    file:"images/030.jpg",
+    emotion:"경고",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:35.177831, lng:129.124206,
+    typography:"혼합(인쇄+손글씨)",
+    material:"종이",
+    environment:"실외 / 상가",
+    notes:"CCTV 작동중 공식 안내판 + 손글씨 꽃게 박스에 음식물 함께 버리면 안됩니다 종량제 봉투에 버리세요"
+  },
+  {
+    id:"031",
+    file:"images/031.jpg",
+    emotion:"호소",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:35.177872, lng:129.124053,
+    typography:"손글씨",
+    material:"종이",
+    environment:"실외 / 편의점 유리",
+    notes:"24시 무인 편의점 유리 — 너무 더워요!!! 문을 꼭!!! 닫아주세요!!!!!! 감사합니다!!!"
+  },
+  {
+    id:"033",
+    file:"images/033.jpg",
+    emotion:"명령",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:35.136428, lng:129.081772,
+    typography:"인쇄 스티커",
+    material:"스티커",
+    environment:"실내 / 계단실",
+    notes:"소변 금지 + 자전거 + 소화기가 함께 있는 전체 샷"
+  },
+  {
+    id:"034",
+    file:"images/034.jpg",
+    emotion:"경고",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:35.157792, lng:129.147294,
+    typography:"인쇄",
+    material:"종이",
+    environment:"실내 / 지하주차장",
+    notes:"기둥 녹색 패널에 붙은 통행로 무단주차 단속"
+  },
+  {
+    id:"035",
+    file:"images/035.jpg",
+    emotion:"위협",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:35.157811, lng:129.147264,
+    typography:"인쇄",
+    material:"종이",
+    environment:"실내 / 계단실",
+    notes:"노란 바탕에 눈 이미지 — 경고문 쓰레기 투기 담배 피우지 마세요! 모두가 지켜보고 있어요!"
+  },
+  {
+    id:"036",
+    file:"images/036.jpg",
+    emotion:"위협",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:35.157792, lng:129.147264,
+    typography:"손글씨",
+    material:"종이",
+    environment:"실내 / 지하주차장",
+    notes:"잠 깐 만 너! 제발 처 드시고 쓰레기 아무데나 버리지 마라! 불시 사진촬영 해서 니들 고발 한다."
+  },
+  {
+    id:"037",
+    file:"images/037.jpg",
+    emotion:"위협",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:35.157906, lng:129.147186,
+    typography:"인쇄",
+    material:"종이 포스터",
+    environment:"실내 / 지하주차장",
+    notes:"쓰레기 사진 포함 — 주차장이 쓰레기장이가! 처 먹고 아무데나 버릴래 쓰레기 같은 인간아!"
+  },
+  {
+    id:"038",
+    file:"images/038.jpg",
+    emotion:"경고",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:35.158189, lng:129.147111,
+    typography:"인쇄 스티커",
+    material:"스티커",
+    environment:"실내 / 엘리베이터 앞",
+    notes:"화물운반금지 손상 배상청구 ← 화물용으로"
+  },
+  {
+    id:"039",
+    file:"images/039.jpg",
+    emotion:"경고",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:35.157772, lng:129.1483,
+    typography:"인쇄",
+    material:"라미네이트 종이",
+    environment:"실내 / 엘리베이터",
+    notes:"엘리베이터 문 — 문 충격 조심! + 주먹 충돌 그래픽"
+  },
+  {
+    id:"040",
+    file:"images/040.jpg",
+    emotion:"명령",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:35.157319, lng:129.148453,
+    typography:"손글씨",
+    material:"종이",
+    environment:"실내 / 계단",
+    notes:"계단 구석 잡동사니 사이 물건 적재 하지 마세요."
+  },
+  {
+    id:"042",
+    file:"images/042.jpg",
+    emotion:"경고",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:35.157189, lng:129.147994,
+    typography:"인쇄",
+    material:"종이 스티커",
+    environment:"실외 / 상가 유리",
+    notes:"보루네오 가구쇼핑 반대쪽 유리창 적재 금지 스티커"
+  },
+  {
+    id:"043",
+    file:"images/043.jpg",
+    emotion:"경고",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:35.157769, lng:129.147522,
+    typography:"인쇄",
+    material:"라미네이트 종이",
+    environment:"실외 / 상가",
+    notes:"적재 금지 클로즈업 — 소방법 조항까지 명시 (BIF 보루네오 부산영업소)"
+  },
+  {
+    id:"044",
+    file:"images/044.jpg",
+    emotion:"경고",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:35.157853, lng:129.147828,
+    typography:"인쇄",
+    material:"라미네이트 종이",
+    environment:"실외 / 상가",
+    notes:"적재 금지 또 다른 각도"
+  },
+  {
+    id:"045",
+    file:"images/045.jpg",
+    emotion:"경고",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:35.157886, lng:129.147506,
+    typography:"인쇄",
+    material:"라미네이트 종이",
+    environment:"실외 / 상가",
+    notes:"적재 금지 라미네이트 처리된 버전"
+  },
+  {
+    id:"047",
+    file:"images/047.jpg",
+    emotion:"경고",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:35.157914, lng:129.147461,
+    typography:"인쇄",
+    material:"종이(바닥 테이프)",
+    environment:"실내 / 건물 로비",
+    notes:"바닥에 경 고 이곳은 공공장소입니다. 공놀이를 금합니다. + 피해 현장 사진"
+  },
+  {
+    id:"048",
+    file:"images/048.jpg",
+    emotion:"환대",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:35.158008, lng:129.147019,
+    typography:"손글씨",
+    material:"종이",
+    environment:"실외 / 부동산 유리문",
+    notes:"반갑습니다 어서오세요 당기세요 — 환영과 안내 동시"
+  },
+  {
+    id:"049",
+    file:"images/049.jpg",
+    emotion:"경고",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:35.157183, lng:129.147217,
+    typography:"인쇄",
+    material:"종이",
+    environment:"실외 / 건물외벽",
+    notes:"CCTV 작동중입니다. 주의하세요. 매장옆 애견용변시 깔끔한 뒤처리바랍니다."
+  },
+  {
+    id:"051",
+    file:"images/051.jpg",
+    emotion:"경고",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:35.157803, lng:129.147247,
+    typography:"혼합(인쇄+손글씨)",
+    material:"라미네이트 종이",
+    environment:"실내 / 복도",
+    notes:"050과 동일 문 — 유수검지장치실 / -경 고- 관계자외 출입금지 클로즈업"
+  },
+  {
+    id:"052",
+    file:"images/052.jpg",
+    emotion:"경고",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:35.157833, lng:129.147233,
+    typography:"혼합(인쇄+스티커)",
+    material:"종이+스티커",
+    environment:"실외 / 건물 측면",
+    notes:"LG 실외기에 사용중 실외기 이오니 손대지 마세요! + 위 빨간 눈 스티커 지켜보고 있어요!"
+  },
+  {
+    id:"053",
+    file:"images/053.jpg",
+    emotion:"위협",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:35.157906, lng:129.147172,
+    typography:"인쇄",
+    material:"스티커",
+    environment:"실외 / 건물 측면",
+    notes:"빨간 눈 스티커 — 지켜보고 있어요! 양심도 없으시네 도로 가져 가시죠! 제발 더러운 짓 맙시다."
+  },
+  {
+    id:"054",
+    file:"images/054.jpg",
+    emotion:"경고",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:37.547067, lng:127.054961,
+    typography:"손글씨",
+    material:"금속판",
+    environment:"실외 / 골목",
+    notes:"녹슨 철판에 매직 손글씨 — 여기 골목에 절대 세우지 마세요 통로 막는다"
+  },
+  {
+    id:"055",
+    file:"images/055.jpg",
+    emotion:"경고",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:37.546883, lng:127.055022,
+    typography:"손글씨",
+    material:"플라스틱 안내판",
+    environment:"실외 / 골목",
+    notes:"노란 차단봉 안내판 — 차 들어내서 쓰레기를 길가로 바짝 두세요 개망신 당함"
+  },
+  {
+    id:"056",
+    file:"images/056.jpg",
+    emotion:"경고",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:37.606114, lng:127.061103,
+    typography:"인쇄",
+    material:"플라스틱",
+    environment:"실외 / 골목",
+    notes:"벽돌 건물 벽에 플라스틱 주차금지 이면도로 사인"
+  },
+  {
+    id:"057",
+    file:"images/057.jpg",
+    emotion:"경고",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:37.604839, lng:127.060639,
+    typography:"인쇄",
+    material:"플라스틱",
+    environment:"실외 / 골목",
+    notes:"분홍색 삼각형 주차금지 표지판 전경"
+  },
+  {
+    id:"061",
+    file:"images/061.jpg",
+    emotion:"명령",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:37.602211, lng:127.057747,
+    typography:"인쇄",
+    material:"종이",
+    environment:"실내 / 건물 복도",
+    notes:"이곳에 물건을 놓지 마시오! 클로즈업 (미술이른교 인쇄)"
+  },
+  {
+    id:"062",
+    file:"images/062.jpg",
+    emotion:"안내",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:37.610572, lng:127.056961,
+    typography:"손글씨",
+    material:"종이",
+    environment:"실내 / 마트",
+    notes:"마트 기둥에 우산 이모티콘 포함 우산 보관소"
+  },
+  {
+    id:"063",
+    file:"images/063.jpg",
+    emotion:"경고",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:37.610039, lng:127.056039,
+    typography:"인쇄",
+    material:"종이",
+    environment:"실외 / 건물외벽",
+    notes:"가스관 위 이곳에 쓰레기 버리지 맙시다"
+  },
+  {
+    id:"064",
+    file:"images/064.jpg",
+    emotion:"경고",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:37.527339, lng:126.898261,
+    typography:"손글씨",
+    material:"종이",
+    environment:"실외 / 골목",
+    notes:"폐가 앞 낡은 의자에 종이 주차금지"
+  },
+  {
+    id:"065",
+    file:"images/065.jpg",
+    emotion:"경고",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:37.527114, lng:126.898139,
+    typography:"혼합(손글씨+인쇄)",
+    material:"종이",
+    environment:"실외 / 도로",
+    notes:"전봇대에 손글씨 공사 안내 + 아래 여기는 주차장소가 아닙니다 아침 8시부터 밤 12시까지 매출합니다."
+  },
+  {
+    id:"066",
+    file:"images/066.jpg",
+    emotion:"경고",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:37.609489, lng:127.056236,
+    typography:"혼합(인쇄+손글씨)",
+    material:"스티커+종이",
+    environment:"실외 / 건물외벽",
+    notes:"가스계량기 옆 수거 거부 안내 노란 스티커 + 손글씨 쓰레기 버리면 안됩니다 경고합니다"
+  },
+  {
+    id:"067",
+    file:"images/067.jpg",
+    emotion:"경고",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:37.576961, lng:126.972406,
+    typography:"인쇄",
+    material:"종이",
+    environment:"실외 / 건물외벽",
+    notes:"공사가 끝났으니 쓰레기 다른 곳에 두셨으면 합니다. 참고로 과태료도 냈습니다."
+  },
+  {
+    id:"068",
+    file:"images/068.jpg",
+    emotion:"경고",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:37.581486, lng:126.969322,
+    typography:"손글씨",
+    material:"종이(테이프 부착)",
+    environment:"실외 / 도로 전봇대",
+    notes:"불법주차 신고 및 단속지역 / 주정차 단속지역으로 불법주차 하지마세요."
+  },
+  {
+    id:"069",
+    file:"images/069.jpg",
+    emotion:"경고",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:37.581506, lng:126.969406,
+    typography:"혼합(손글씨+인쇄)",
+    material:"종이(테이프 부착)",
+    environment:"실외 / 도로 전봇대",
+    notes:"전봇대 반대면 단속지역 + CCTV 현장 사진"
+  },
+  {
+    id:"070",
+    file:"images/070.jpg",
+    emotion:"유머",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:37.581497, lng:126.969428,
+    typography:"인쇄 스티커",
+    material:"스티커",
+    environment:"실외 / 도로",
+    notes:"오렌지색 삼각콘 위에 흰 스티커 — 비러·알보"
+  },
+  {
+    id:"071",
+    file:"images/071.jpg",
+    emotion:"경고",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:37.581489, lng:126.969444,
+    typography:"인쇄",
+    material:"종이",
+    environment:"실외 / 상가 앞",
+    notes:"커피숍 입간판에 붙은 CCTV(공용) 주차단속지역"
+  },
+  {
+    id:"072",
+    file:"images/072.jpg",
+    emotion:"경고",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:37.5816, lng:126.970092,
+    typography:"혼합(공식+손글씨)",
+    material:"금속+종이",
+    environment:"실외 / 도로",
+    notes:"공식 주차금지(견인조치함) 표지판 + 손글씨 쓰레기 버리지 마세요"
+  },
+  {
+    id:"073",
+    file:"images/073.jpg",
+    emotion:"명령",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:37.576756, lng:126.97235,
+    typography:"인쇄",
+    material:"종이",
+    environment:"실외 / 골목 철문",
+    notes:"철문에 금연 NO SMOKING + 소변 금지 두 장"
+  },
+  {
+    id:"074",
+    file:"images/074.jpg",
+    emotion:"안내",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:37.542569, lng:127.062272,
+    typography:"손글씨",
+    material:"종이",
+    environment:"실외 / 상가 셔터",
+    notes:"알록달록 셔터문에 희미한 손글씨 안내문"
+  },
+  {
+    id:"077",
+    file:"images/077.jpg",
+    emotion:"유머",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:37.543267, lng:127.058175,
+    typography:"손글씨",
+    material:"종이",
+    environment:"실외 / 편의점 유리문",
+    notes:"GS25 편의점 당기세요!! 12번 반복 두 장 + 명절 휴무 감사합니다"
+  },
+  {
+    id:"078",
+    file:"images/078.jpg",
+    emotion:"경고",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:37.543311, lng:127.058272,
+    typography:"손글씨",
+    material:"종이",
+    environment:"실외 / 건물 입구",
+    notes:"초록 철망 울타리에 영업용 킥보드 주차 금지 (도로변에 세워 주세요) / 개인 킥보드만 주차(보상) 가능합니다"
+  },
+  {
+    id:"079",
+    file:"images/079.jpg",
+    emotion:"안내",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:37.543792, lng:127.057656,
+    typography:"인쇄",
+    material:"스티커",
+    environment:"실외 / 건물 유리문",
+    notes:"THE LIV 세종타워 유리문 냉방중 문을 닫아주세요 북극곰 스티커"
+  },
+  {
+    id:"080",
+    file:"images/080.jpg",
+    emotion:"경고",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:37.544014, lng:127.057328,
+    typography:"인쇄",
+    material:"종이",
+    environment:"실외 / 공사장 가림막",
+    notes:"노랑/검정 줄무늬 공사 가림막에 이곳에 쓰레기 버리지 마세요"
+  },
+  {
+    id:"081",
+    file:"images/081.jpg",
+    emotion:"위협",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:37.543689, lng:127.057853,
+    typography:"손글씨",
+    material:"골판지",
+    environment:"실외 / 골목",
+    notes:"건물 외벽 골판지에 금 연구역 고 발조치. 손글씨"
+  },
+  {
+    id:"082",
+    file:"images/082.jpg",
+    emotion:"경고",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:37.543697, lng:127.057731,
+    typography:"손글씨",
+    material:"골판지",
+    environment:"실외 / 골목",
+    notes:"골판지 박스에 화기 엄금 금연 구역 + 옆 판에 연구역 고발조치"
+  },
+  {
+    id:"083",
+    file:"images/083.jpg",
+    emotion:"경고",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:37.5437, lng:127.057686,
+    typography:"손글씨",
+    material:"종이",
+    environment:"실외 / 건물 측면",
+    notes:"실외기 옆 실외기 주변 금연야 담배꽁초X 손글씨"
+  },
+  {
+    id:"084",
+    file:"images/084.jpg",
+    emotion:"위협",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:37.5437, lng:127.057639,
+    typography:"혼합(손글씨+인쇄)",
+    material:"벽(페인트)+스티커",
+    environment:"실외 / 골목",
+    notes:"시멘트 벽에 크게 페인트 금연구역 고발조치.함 + 공식 주차금지+금연구역 스티커"
+  },
+  {
+    id:"085",
+    file:"images/085.jpg",
+    emotion:"안내",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:37.542756, lng:127.056458,
+    typography:"손글씨",
+    material:"종이",
+    environment:"실외 / 편의점 유리문",
+    notes:"CU 편의점 추석당일 휴무"
+  },
+  {
+    id:"086",
+    file:"images/086.jpg",
+    emotion:"호소",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:37.544108, lng:127.049622,
+    typography:"손글씨",
+    material:"종이",
+    environment:"실외 / 상가",
+    notes:"(커피.음료.컵등등...) 외국인 관광객 보기 민망합니다^^ 호소 안내문"
+  },
+  {
+    id:"087",
+    file:"images/087.jpg",
+    emotion:"경고",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:37.542972, lng:127.053214,
+    typography:"손글씨",
+    material:"종이",
+    environment:"실외 / 골목 벽돌벽",
+    notes:"벽돌 벽에 야간 촬영한 희미한 손글씨 경고문"
+  },
+  {
+    id:"088",
+    file:"images/088.jpg",
+    emotion:"위협",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:37.548906, lng:127.044822,
+    typography:"혼합(손글씨+인쇄)",
+    material:"종이+플라스틱",
+    environment:"실외 / 골목",
+    notes:"주황 차단봉에 주차금지 해코지 당함 고발 좋아하는 사람도 망함 + 고발 해코지 당함 + 뒤에 주차하지 마십시요!"
+  },
+  {
+    id:"089",
+    file:"images/089.jpg",
+    emotion:"안내",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:37.570842, lng:127.003181,
+    typography:"인쇄",
+    material:"종이",
+    environment:"실내 / 건물 복도",
+    notes:"흰 벽에 종이 4장 종근당 약국 정상 영업중 + 화살표"
+  },
+  {
+    id:"090",
+    file:"images/090.jpg",
+    emotion:"안내",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:37.561311, lng:126.994286,
+    typography:"혼합(인쇄+간판)",
+    material:"금속 간판",
+    environment:"실외 / 상가",
+    notes:"야간 싼아빠을 디지털 인쇄소 간판 + 1인쇄 1제본 홍보"
+  },
+  {
+    id:"091",
+    file:"images/091.jpg",
+    emotion:"안내",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:37.514661, lng:127.118272,
+    typography:"손글씨",
+    material:"나무 액자",
+    environment:"실외 / 가게 앞",
+    notes:"나무 액자에 손글씨 — 주인이 잠시 자리에 없습니다 조금만 기다려주세요 원하시는 주문하시면 나가겠습니다"
+  },
+  {
+    id:"092",
+    file:"images/092.jpg",
+    emotion:"안내",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:37.573058, lng:126.935858,
+    typography:"손글씨",
+    material:"종이",
+    environment:"실외 / 가게 유리문",
+    notes:"쇼핑백 모양 종이에 화수목금 없니다 (화수목금 휴무)"
+  },
+  {
+    id:"093",
+    file:"images/093.jpg",
+    emotion:"안내",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:37.518586, lng:126.672425,
+    typography:"손글씨",
+    material:"종이+원형 패찰",
+    environment:"실외 / 가게 입구",
+    notes:"약초 가게 명절선물 주문 받습니다 + 원형 패찰 약초 갈아요"
+  },
+  {
+    id:"094",
+    file:"images/094.jpg",
+    emotion:"경고",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:37.562742, lng:126.922906,
+    typography:"손글씨(페인트)",
+    material:"금속 셔터",
+    environment:"실외 / 골목",
+    notes:"셔터 문에 흰 페인트 손글씨 — 차 고만 세 차로 X"
+  },
+  {
+    id:"095",
+    file:"images/095.jpg",
+    emotion:"호소",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:37.562344, lng:126.923211,
+    typography:"손글씨",
+    material:"종이",
+    environment:"실외 / 골목",
+    notes:"오토바이 탱크에 이곳에 주차 삼가해주세요 / 차량소통에 방해가 됩니다 / 협조 부탁드립니다"
+  },
+  {
+    id:"096",
+    file:"images/096.jpg",
+    emotion:"안내",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:33.506169, lng:126.493272,
+    typography:"인쇄",
+    material:"천(마스크)",
+    environment:"실외 / 공원",
+    notes:"제주 돌하르방에 마스크를 씌워 마스크착용 코로나 시기 안내"
+  },
+  {
+    id:"097",
+    file:"images/097.jpg",
+    emotion:"유머",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:37.535733, lng:127.001061,
+    typography:"인쇄",
+    material:"종이",
+    environment:"실외 / 골목",
+    notes:"UFO 납치 그림 + 쓰레기 버린인간 잡아 간다 유머 경고 포스터"
+  },
+  {
+    id:"098",
+    file:"images/098.jpg",
+    emotion:"명령",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:37.520314, lng:126.903856,
+    typography:"손글씨",
+    material:"포스트잇",
+    environment:"실내 / 가게 입구",
+    notes:"노란 포스트잇에 오토바이 주차금지"
+  },
+  {
+    id:"099",
+    file:"images/099.jpg",
+    emotion:"경고",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:37.520272, lng:126.903969,
+    typography:"혼합(인쇄+손글씨)",
+    material:"종이+플라스틱",
+    environment:"실외 / 골목",
+    notes:"주황 볼라드 주차금지 + 노란 입간판 카메라 24시간녹화 노래방 주차 경고"
+  },
+  {
+    id:"100",
+    file:"images/100.jpg",
+    emotion:"안내",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:37.520306, lng:126.903922,
+    typography:"혼합(손글씨+인쇄)",
+    material:"나무 입간판",
+    environment:"실외 / 가게 입구",
+    notes:"빨간 나무 입간판 — 알림 신발을 닦고 들어가세요 감사합니다."
+  },
+  {
+    id:"101",
+    file:"images/101.jpg",
+    emotion:"안내",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:37.548275, lng:127.007064,
+    typography:"인쇄 스티커",
+    material:"스티커",
+    environment:"실내 / 에스컬레이터",
+    notes:"코로나 거리두기 에스컬레이터 간격 유지 노란 스티커"
+  },
+  {
+    id:"102",
+    file:"images/102.jpg",
+    emotion:"경고",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:37.557453, lng:126.904725,
+    typography:"인쇄(스텐실)",
+    material:"벽(페인트)",
+    environment:"실외 / 주차장 벽",
+    notes:"주차장 흰 벽에 스텐실 외부인주차금지"
+  },
+  {
+    id:"103",
+    file:"images/103.jpg",
+    emotion:"경고",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:37.557378, lng:126.904756,
+    typography:"혼합(인쇄+손글씨)",
+    material:"플라스틱+금속체인",
+    environment:"실외 / 건물 입구",
+    notes:"빨간 원형 주차금지 + 녹색 체인 잠금 + 손글씨 주차하지 마세요"
+  },
+  {
+    id:"104",
+    file:"images/104.jpg",
+    emotion:"안내",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:37.557458, lng:126.905044,
+    typography:"손글씨",
+    material:"종이",
+    environment:"실외 / 가게 입구",
+    notes:"스테인리스 문에 지원금 사용가능 손글씨 안내"
+  },
+  {
+    id:"105",
+    file:"images/105.jpg",
+    emotion:"경고",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:37.534122, lng:127.007347,
+    typography:"인쇄",
+    material:"종이(라미네이트)",
+    environment:"실내 / 건물 로비",
+    notes:"바닥에 액자형 — 바닥 타일 아래 생긴 틈 밟지 마세요 + 양생중"
+  },
+  {
+    id:"106",
+    file:"images/106.jpg",
+    emotion:"호소",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:37.532825, lng:127.004883,
+    typography:"손글씨",
+    material:"종이",
+    environment:"실내 / 복도",
+    notes:"cctv 확인후 반드시 신고 하겠습니다. 동네가 너무 더럽습니다. 깨끗한 환경을 만들어 갈 수 있도록 협조 바랍니다."
+  },
+  {
+    id:"107",
+    file:"images/107.jpg",
+    emotion:"안내",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:37.558053, lng:126.908317,
+    typography:"인쇄",
+    material:"금속 간판",
+    environment:"실외 / 상가",
+    notes:"마포구 기능협의회 창문에 금이빨 삽니다 치아 캐릭터 안내"
+  },
+  {
+    id:"108",
+    file:"images/108.jpg",
+    emotion:"경고",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:37.557872, lng:126.907228,
+    typography:"손글씨",
+    material:"종이",
+    environment:"실외 / 편의점 앞",
+    notes:"CU 외벽 화장지 묶음 위 여기에 앉지 마세요요"
+  },
+  {
+    id:"109",
+    file:"images/109.jpg",
+    emotion:"안내",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:37.557514, lng:126.905411,
+    typography:"손글씨",
+    material:"종이",
+    environment:"실외 / 가게 유리문",
+    notes:"블라인드에 손글씨 연쇄.구두 (폐업하였습니다)"
+  },
+  {
+    id:"110",
+    file:"images/110.jpg",
+    emotion:"경고",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:37.531058, lng:127.007356,
+    typography:"인쇄",
+    material:"종이(스탠드)",
+    environment:"실외 / 골목",
+    notes:"낡은 골목 입구 빨간 대걸레 스탠드에 쓰레기 버리지 마세요"
+  },
+  {
+    id:"111",
+    file:"images/111.jpg",
+    emotion:"호소",
+    emotion_confidence:"",
+    emotion_alt:"",
+    lat:37.562011, lng:126.926225,
+    typography:"손글씨",
+    material:"골판지",
+    environment:"실외 / 가게 유리문",
+    notes:"골판지에 오늘 개인사정으로 휴무 입니다ㅠㅠ 이용에 불편드려 죄송합니다"
+  }
+];
+
+// ── PROJECTION ────────────────────────────────────────────────────────
+const BOUNDS = { latMin:37.42, latMax:37.70, lngMin:126.78, lngMax:127.18 };
+const PANEL_W = 320;
+
+function project(lat, lng) {
+  const W = window.innerWidth - PANEL_W;
+  const H = window.innerHeight;
+  const PAD = { top: 60, bottom: 40, left: 40, right: 40 };
+  const x = PAD.left + (lng - BOUNDS.lngMin) / (BOUNDS.lngMax - BOUNDS.lngMin) * (W - PAD.left - PAD.right);
+  const y = PAD.top  + (1 - (lat - BOUNDS.latMin) / (BOUNDS.latMax - BOUNDS.latMin)) * (H - PAD.top - PAD.bottom);
+  return { x, y };
+}
+
+// ── SEEDED ROTATION PER ITEM ──────────────────────────────────────────
+function itemRotation(id) {
+  // deterministic ±5deg rotation from item id
+  const h = parseInt(id) * 2654435761 >>> 0;
+  return ((h % 10000) / 10000 - 0.5) * 10; // -5 to +5 degrees
+}
+
+// ── 작성자 추론 — 안내문 스타일 캔버스 드로잉 ───────────────────────
+function wrapText(ctx, text, maxW, lineH) {
+  const words = text.split('');  // 한국어는 글자 단위
+  const lines = [];
+  let cur = '';
+  // 어절 단위로 끊기
+  const tokens = text.split(/(\s+)/);
+  for (const tok of tokens) {
+    const test = cur + tok;
+    if (ctx.measureText(test).width > maxW && cur !== '') {
+      lines.push(cur.trimEnd());
+      cur = tok.trimStart();
+    } else {
+      cur = test;
+    }
+  }
+  if (cur.trim()) lines.push(cur.trim());
+  return lines;
+}
+
+// seeded PRNG — 아이템마다 일정한 텍스트 흔들림 유지
+function seededRand(seed) {
+  let s = (seed ^ 0xdeadbeef) >>> 0;
+  return () => { s = Math.imul(s ^ (s >>> 16), 0x45d9f3b) >>> 0; return s / 0xffffffff; };
+}
+
+function drawAuthorSign(canvas, text, itemSeed) {
+  const bgImg = new Image();
+  bgImg.onload = () => {
+    const W = canvas.width;
+    const H = Math.round(W * bgImg.height / bgImg.width);
+    canvas.height = H;
+    const ctx = canvas.getContext('2d');
+    const rnd = seededRand(itemSeed || 42);
+
+    // ① logo-2.png 그대로 그리기
+    ctx.drawImage(bgImg, 0, 0, W, H);
+
+    // ② 텍스트 쓸 영역 — 실측 밝은 영역
+    const TX = W * 0.14;
+    const TY = H * 0.13;
+    const TW = W * 0.70;
+    const TH = H * 0.76;
+
+    // ③ 손글씨 텍스트 오버레이
+    const FS = Math.max(11, Math.round(W * 0.053));
+    const LINE_H = FS * 1.72;
+
+    const offCtx = document.createElement('canvas').getContext('2d');
+    offCtx.font = `bold ${FS * 1.25}px "Nanum Myeongjo","Noto Sans KR",serif`;
+    const lines = wrapText(offCtx, text, TW - 12, FS * 1.6);
+
+    // 텍스트 블록을 종이 중앙에 세로 정렬
+    const totalTextH = lines.length * LINE_H;
+    const startY     = TY + (TH - totalTextH) / 2 + FS;
+
+    const HAND_FONT = `bold "Nanum Myeongjo","Noto Sans KR",serif`;
+    ctx.textBaseline = 'alphabetic';
+    ctx.textAlign    = 'left';
+
+    lines.forEach((line, li) => {
+      const baseY = startY + li * LINE_H;
+      ctx.font = `${FS * 1.25}px ${HAND_FONT}`;
+      const lineW  = ctx.measureText(line).width;
+      const startX = TX + (TW - lineW) / 2;
+      let x = startX;
+
+      for (const char of line) {
+        const jY  = (rnd() - 0.5) * 2.4;
+        const jX  = (rnd() - 0.5) * 0.6;
+        const sz  = FS * 1.25 + (rnd() - 0.5) * 1.2;
+        const rot = (rnd() - 0.5) * 0.07;
+
+        ctx.save();
+        ctx.translate(x + jX, baseY + jY);
+        ctx.rotate(rot);
+
+        // 잉크 번짐 그림자
+        ctx.font      = `${sz + 0.8}px ${HAND_FONT}`;
+        ctx.fillStyle = 'rgba(15,8,3,0.2)';
+        ctx.fillText(char, 0.8, 1.5);
+
+        // 본 글자
+        ctx.font      = `bold ${sz}px ${HAND_FONT}`;
+        ctx.fillStyle = '#1a0f06';
+        ctx.fillText(char, 0, 0);
+
+        const charW = ctx.measureText(char).width;
+        ctx.restore();
+        x += charW + (rnd() - 0.5) * 0.8;
+      }
+    });
+  };
+
+  bgImg.onerror = () => {
+    canvas.height = 100;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#f0ede4';
+    ctx.fillRect(0, 0, canvas.width, 100);
+    ctx.font = `bold 13px "Noto Sans KR",sans-serif`;
+    ctx.fillStyle = '#1c1208';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const lines = wrapText(ctx, text, canvas.width - 24, 20);
+    lines.forEach((l, i) => ctx.fillText(l, canvas.width / 2, 20 + i * 20));
+  };
+
+  bgImg.src = 'logo-2.png';
+}
+
+// ── COLLISION RESOLUTION ──────────────────────────────────────────────
+function resolveCollisions(positions, boundL, boundR, boundT, boundB, iconW, iconH) {
+  const EST_W = Math.round((iconW || 190) * 0.65); // 수평: 65%
+  const EST_H = Math.round((iconH || 275) * 0.50); // 수직: 50%
+  const ITERS = 60;
+
+  for (let iter = 0; iter < ITERS; iter++) {
+    let anyOverlap = false;
+    for (let i = 0; i < positions.length; i++) {
+      for (let j = i + 1; j < positions.length; j++) {
+        const pi = positions[i];
+        const pj = positions[j];
+        const dx = pj.x - pi.x;
+        const dy = pj.y - pi.y;
+        const overlapX = EST_W - Math.abs(dx);
+        const overlapY = EST_H - Math.abs(dy);
+
+        if (overlapX > 0 && overlapY > 0) {
+          anyOverlap = true;
+          if (overlapX < overlapY) {
+            const push = overlapX / 2 * (dx >= 0 ? 1 : -1);
+            pi.x -= push; pj.x += push;
+          } else {
+            const push = overlapY / 2 * (dy >= 0 ? 1 : -1);
+            pi.y -= push; pj.y += push;
+          }
+        }
+      }
+    }
+    // bounds 클램프 — 매 이터레이션마다 경계 이탈 방지
+    if (boundL !== undefined) {
+      positions.forEach(p => {
+        p.x = Math.max(boundL, Math.min(boundR, p.x));
+        p.y = Math.max(boundT, Math.min(boundB, p.y));
+      });
+    }
+    if (!anyOverlap) break;
+  }
+  return positions;
+}
+
+// ── 안내문 실제 내용 ──────────────────────────────────────────────────
+const SIGN_CONTENT = {
+  "001": "다판다 24h unmanned store",
+  "002": "담배꽁초 버리지 마세요",
+  "003": "(의류수거함 안내 스티커들)",
+  "004": "개새끼야! 금연",
+  "005": "성불(成佛)하여 살아있는 부처 되시기를 기원합니다",
+  "006": "만지면 개 흥분↑ 눈으로만 -Sorry",
+  "007": "가져가지 마시오",
+  "009": "하고자 하는 자는 발전이 있고 하지 않으려는 자는 핑계가 있다",
+  "010": "주인을 찾습니다~",
+  "011": "주의!! 엘리베이터 정원 6명",
+  "012": "본 작품은 쿠션이 아니고 딱딱한 돌입니다",
+  "014": "롯데 짝짝이 얼음 없음",
+  "015": "식사가 종료되었습니다.",
+  "017": "쓰레기는 자기 집 앞에 내놓으시오 / CCTV 과태료",
+  "021": "포켓볼 PocketBall",
+  "022": "쓰레기 버리는 사람 전선카메라 확인 후 경찰 신고",
+  "023": "흡연금지 답.배.피.지.마.",
+  "024": "식물(꽃을) 함부로 가져가지 마세요 CCTV",
+  "025": "주차금지 지정주차장",
+  "026": "문 닫혔음",
+  "027": "담. 쓰레기 버리지 마세요",
+  "028": "알려드립니다 매주 월요일은 정상영업합니다~~",
+  "029": "반지 마세요!! 재산이다!! CCTV 작동중인다",
+  "030": "꽃게 박스에 쓰레기 버리지 마세요 / 종량제 봉투에 버리세요",
+  "031": "너무 더워요!!! 문을 꼭!!! 닫아주세요!!!!!!",
+  "033": "소변 금지",
+  "034": "통행로 무단주차 단속",
+  "035": "쓰레기 투기, 담배 피우지 마세요! 모두가 지켜보고 있어요!",
+  "036": "잠 깐 만 너! 제발 처 드시고 쓰레기 아무데나 버리지 마라! 불시 사진촬영 해서 니들 고발 한다.",
+  "037": "주차장이 쓰레기장이가! 처 먹고 아무데나 버릴래 쓰레기 같은 인간아!",
+  "038": "화물운반금지 / 손상 시 배상청구",
+  "039": "문 충격 조심!",
+  "040": "물건 적재 하지 마세요.",
+  "042": "적재 금지",
+  "043": "적재 금지",
+  "044": "적재 금지",
+  "045": "적재 금지",
+  "047": "이곳은 공공장소입니다. 공놀이를 금합니다.",
+  "048": "반갑습니다 어서오세요 당기세요",
+  "049": "CCTV 작동중입니다. 주의하세요. 매장옆 애견용변시 깔끔한 뒤처리바랍니다.",
+  "051": "유수검지장치실 / -경 고- 관계자외 출입금지",
+  "052": "사용중 실외기 이오니 손대지 마세요!",
+  "053": "지켜보고 있어요! 양심도 없으시네, 도로 가져 가시죠! 제발 더러운 짓 맙시다.",
+  "054": "여기 골목에 절대 세우지 따세오",
+  "055": "차 들어내서 쓰레기를 길가로 바짝 두세요. 개망신 당함 봐...",
+  "056": "주차금지 이면도로",
+  "057": "주차금지",
+  "061": "이곳에 물건을 놓지 마시오!",
+  "062": "🌂 우산 보관소 🌂",
+  "063": "이곳에 쓰레기 버리지 맙시다",
+  "064": "주차금지",
+  "065": "여기는 주차장소가 아닙니다 / 아침 8시부터 밤 12시까지",
+  "066": "수거 거부 안내 / 쓰레기 버리지 마세요!!",
+  "067": "공사가 끝났으니 쓰레기 다른 곳에 두셨으면 합니다. 참고로 과태료도 냈습니다.",
+  "068": "불법주차 신고 및 단속지역 / 주정차 단속지역으로 불법주차 하지마세요.",
+  "069": "단속지역 / CCTV 현장 사진",
+  "070": "비러·알보",
+  "071": "CCTV(공용) 주차단속지역",
+  "072": "주차금지(견인조치함) / 쓰레기 버리지 마세요",
+  "073": "금연 NO SMOKING / 소변 금지",
+  "074": "(희미한 손글씨 안내문)",
+  "077": "당기세요!! 당기세요!! 당기세요!! (×12) / 명절 휴무 감사합니다",
+  "078": "영업용 킥보드 주차 금지 / 개인 킥보드만 주차 가능합니다",
+  "079": "냉방중 문을 닫아주세요",
+  "080": "이곳에 쓰레기 버리지 마세요",
+  "081": "금 연구역 고 발조치.",
+  "082": "화기 엄금 금연 구역",
+  "083": "실외기 주변 금연야 담배꽁초X",
+  "084": "금연구역 고발조치.함",
+  "085": "추석당일 휴무",
+  "086": "(커피.음료.컵등등...) 외국인 관광객 보기 민망합니다^^",
+  "087": "(야간 촬영 희미한 손글씨 경고문)",
+  "088": "주차금지 해코지 당함 / 고발 좋아하는 사람도 망함",
+  "089": "종근당 약국 정상 영업중 ←",
+  "090": "싼아빠을 디지털",
+  "091": "주인이 잠시 자리에 없습니다 조금만 기다려주세요",
+  "092": "화수목금 없니다",
+  "093": "명절선물 주문 받습니다 / 약초 갈아요",
+  "094": "차 고만 세 차로 X",
+  "095": "이곳에 주차 삼가해주세요 / 차량소통에 방해가 됩니다 / 협조 부탁드립니다",
+  "096": "마스크착용",
+  "097": "쓰레기 버린인간 잡아 간다",
+  "098": "오토바이 주차금지",
+  "099": "주차금지 / 카메라 24시간녹화",
+  "100": "알림 신발을 닦고 들어가세요 감사합니다.",
+  "101": "간격 유지 ↔",
+  "102": "외부인주차금지",
+  "103": "주차하지 마세요",
+  "104": "지원금 사용가능",
+  "105": "바닥 타일 아래 생긴 틈 밟지 마세요 / 양생중",
+  "106": "동네가 너무 더럽습니다. 깨끗한 환경을 만들어 갈 수 있도록 협조 바랍니다.",
+  "107": "금이빨 삽니다",
+  "108": "여기에 앉지 마세요요",
+  "109": "연쇄.구두 (폐업하였습니다)",
+  "110": "쓰레기 버리지 마세요",
+  "111": "오늘 개인사정으로 휴무 입니다ㅠㅠ / 이용에 불편드려 죄송합니다"
+};
+
+// ── RENDER DOTS ───────────────────────────────────────────────────────
+let activeFilter  = '전체';
+let activeId      = null;
+let cachedPositions = null;
+
+// ── 파노라마 모드 상태 ────────────────────────────────────────────────
+const PANO_MULT   = 18.0;  // 화면 너비의 18배 캔버스
+let panoW         = 0;     // 파노라마 총 너비 (px)
+let panoOffset    = 0;     // 현재 X 오프셋 (실제)
+let panoTarget    = 0;     // 목표 X 오프셋 (lerp 대상)
+let panoOffsetY   = 0;     // 현재 Y 오프셋 (실제)
+let panoTargetY   = 0;     // 목표 Y 오프셋 (lerp 대상)
+let gyroEnabled   = false;
+let panoRafId     = null;
+let zoomLevel     = 1.0;    // 현재 확대 배율
+let touchStartX   = 0;
+let touchStartY   = 0;
+let offsetAtTouch  = 0;
+let offsetAtTouchY = 0;
+
+function isPanoMode() { return true; } // 데스크탑·모바일 모두 파노라마
+
+function computePositions() {
+  const W = window.innerWidth - PANEL_W;  // 패널 제외 실제 지도 너비
+  const H = window.innerHeight;
+
+  // 아이콘 크기 — 뷰포트에 따라 동적 계산 (CSS clamp와 동기화)
+  const iconMaxW = Math.min(354, Math.max(186, W * 0.336));
+  const iconMaxH = Math.min(507, Math.max(268, W * 0.487));
+  const ICON_W2  = Math.round(iconMaxW / 2) + 12;
+  const ICON_H   = Math.round(iconMaxH) + 10;
+
+  const canvasW  = Math.round(W * PANO_MULT);
+  panoW = canvasW;
+
+  const boundL = Math.max(canvasW * 0.03, ICON_W2);
+  const boundR = Math.min(canvasW * 0.97, canvasW - ICON_W2);
+  // 위아래 여백 확보 — 상단 여백 줄여서 하단으로 분산
+  const boundT = Math.max(H * 0.34, Math.round(iconMaxH * 0.60));
+  const boundB = Math.min(H * 0.94, H - Math.round(H * 0.03));
+
+  const zoneW = boundR - boundL;
+  const zoneH = boundB - boundT;
+  const n     = data.filter(Boolean).length;
+
+  // ── 완전 랜덤 배치 (하단 편향) ──
+  const positions = data.map(() => ({
+    x: boundL + Math.random() * zoneW,
+    y: boundT + Math.pow(Math.random(), 0.7) * zoneH,
+  }));
+
+  resolveCollisions(positions, boundL, boundR, boundT, boundB, iconMaxW, iconMaxH);
+
+  positions.forEach(p => {
+    p.x = Math.max(boundL, Math.min(boundR, p.x));
+    p.y = Math.max(boundT, Math.min(boundB, p.y));
+  });
+
+  cachedPositions = positions;
+
+  // dot-layer 너비 적용
+  const layer = document.getElementById('dot-layer');
+  layer.style.width = panoW + 'px';
+  layer.classList.add('pano-mode');
+}
+
+// ── 파노라마 애니메이션 루프 ──────────────────────────────────────────
+function startPanoLoop() {
+  if (panoRafId) return;
+  const layer = document.getElementById('dot-layer');
+  function loop() {
+    panoOffset  += (panoTarget  - panoOffset)  * 0.07;
+    panoOffsetY += (panoTargetY - panoOffsetY) * 0.07;
+    layer.style.transform = `scale(${zoomLevel}) translateX(-${panoOffset}px) translateY(-${panoOffsetY}px)`;
+    panoRafId = requestAnimationFrame(loop);
+  }
+  loop();
+}
+
+function stopPanoLoop() {
+  if (panoRafId) { cancelAnimationFrame(panoRafId); panoRafId = null; }
+}
+
+// ── 자이로 → 오프셋 매핑 ─────────────────────────────────────────────
+function handleOrientation(e) {
+  // gamma: 폰을 세로로 들었을 때 좌(-90)~우(+90) 기울기
+  const gamma  = Math.max(-55, Math.min(55, e.gamma || 0));
+  // -55° = 왼쪽 끝, +55° = 오른쪽 끝
+  const ratio  = (gamma + 55) / 110;
+  const maxOff = Math.max(0, panoW - (window.innerWidth - PANEL_W) / zoomLevel);
+  panoTarget   = Math.max(0, Math.min(maxOff, ratio * maxOff));
+}
+
+// ── 터치 드래그 대체 패닝 (X + Y) ──────────────────────────────────
+function initTouchPan() {
+  const layer = document.getElementById('dot-layer');
+  layer.addEventListener('touchstart', e => {
+    if (gyroEnabled) return;
+    if (e.touches.length !== 1) return;
+    touchStartX    = e.touches[0].clientX;
+    touchStartY    = e.touches[0].clientY;
+    offsetAtTouch  = panoTarget;
+    offsetAtTouchY = panoTargetY;
+  }, { passive: true });
+
+  layer.addEventListener('touchmove', e => {
+    if (gyroEnabled) return;
+    if (e.touches.length !== 1) return;
+    const dx     = e.touches[0].clientX - touchStartX;
+    const dy     = e.touches[0].clientY - touchStartY;
+    const maxOff  = Math.max(0, panoW - (window.innerWidth - PANEL_W) / zoomLevel);
+    const maxOffY = Math.max(0, window.innerHeight * (1 - 1 / zoomLevel));
+    panoTarget  = Math.max(0, Math.min(maxOff,  offsetAtTouch  - dx));
+    panoTargetY = Math.max(0, Math.min(maxOffY, offsetAtTouchY - dy));
+  }, { passive: true });
+}
+
+// ── 데스크탑 마우스 드래그 패닝 ──────────────────────────────────────
+function initMouseDrag() {
+  const layer  = document.getElementById('dot-layer');
+  let dragging = false;
+  let startX   = 0;
+  let startY   = 0;
+  let startOff  = 0;
+  let startOffY = 0;
+  let dragDist = 0;
+
+  // 드래그 시작: 패널·사이드바·필터 위는 제외
+  layer.addEventListener('mousedown', e => {
+    if (e.target.closest('.map-dot')) return;
+    dragging  = true;
+    startX    = e.clientX;
+    startY    = e.clientY;
+    startOff  = panoTarget;
+    startOffY = panoTargetY;
+    dragDist  = 0;
+    layer.style.cursor = 'grabbing';
+    e.preventDefault();
+  });
+
+  window.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    const dx   = e.clientX - startX;
+    const dy   = e.clientY - startY;
+    dragDist   = Math.hypot(dx, dy);
+    const maxOff  = Math.max(0, panoW - (window.innerWidth - PANEL_W) / zoomLevel);
+    const maxOffY = Math.max(0, window.innerHeight * (1 - 1 / zoomLevel));
+    panoTarget  = Math.max(0, Math.min(maxOff,  startOff  - dx));
+    panoTargetY = Math.max(0, Math.min(maxOffY, startOffY - dy));
+  });
+
+  window.addEventListener('mouseup', () => {
+    if (!dragging) return;
+    dragging = false;
+    layer.style.cursor = 'grab';
+  });
+
+  // 드래그 중 dot 클릭 억제 (5px 이상 이동 시)
+  layer.addEventListener('click', e => {
+    if (dragDist > 5) { e.stopPropagation(); dragDist = 0; }
+  }, true);
+
+  layer.style.cursor = 'grab';
+}
+
+// ── 패닝 통합 초기화 (데스크탑: 마우스 드래그 / 모바일: 자이로+터치) ──
+function setZoom(level) {
+  zoomLevel = Math.max(1.0, Math.min(3.0, level));  // 최소 100%로 고정
+  const label   = document.getElementById('zoom-label');
+  const btnOut  = document.getElementById('zoom-out');
+  if (label)  label.textContent = Math.round(zoomLevel * 100) + '%';
+  if (btnOut) {
+    const atMin = zoomLevel <= 1.0;
+    btnOut.disabled = atMin;
+    btnOut.style.opacity = atMin ? '0.3' : '';
+    btnOut.style.cursor  = atMin ? 'default' : '';
+  }
+  const layer = document.getElementById('dot-layer');
+  layer.style.transformOrigin = '0 0';
+  const maxOff  = Math.max(0, panoW - (window.innerWidth - PANEL_W) / zoomLevel);
+  const maxOffY = Math.max(0, window.innerHeight * (1 - 1 / zoomLevel));
+  panoTarget  = panoOffset  = Math.max(0, Math.min(maxOff,  panoTarget));
+  panoTargetY = panoOffsetY = Math.max(0, Math.min(maxOffY, panoTargetY));
+}
+
+function initZoomButtons() {
+  const layer = document.getElementById('dot-layer');
+  layer.style.transformOrigin = '0 0';
+
+  document.getElementById('zoom-in').addEventListener('click', () => setZoom(zoomLevel + 0.25));
+  document.getElementById('zoom-out').addEventListener('click', () => {
+    if (zoomLevel <= 1.0) return;
+    setZoom(zoomLevel - 0.25);
+  });
+  // 초기 상태: 100%이면 즉시 비활성
+  setZoom(zoomLevel);
+
+  // 마우스 휠 zoom (Ctrl 없어도 동작)
+  window.addEventListener('wheel', e => {
+    // 패널/사이드바 위에서는 무시
+    if (e.target.closest('#panel, .emo-panel, .zoom-controls')) return;
+
+    // 서브 패널이 열려 있으면 서브 패널 스크롤 우선
+    if (document.body.classList.contains('kw-open')) {
+      const kwList = document.getElementById('kw-list');
+      const { scrollTop, scrollHeight, clientHeight } = kwList;
+      const goingDown = e.deltaY > 0;
+      const goingUp   = e.deltaY < 0;
+      const canScrollDown = scrollTop < scrollHeight - clientHeight - 1;
+      const canScrollUp   = scrollTop > 0;
+      if ((goingDown && canScrollDown) || (goingUp && canScrollUp)) {
+        e.preventDefault();
+        kwList.scrollTop += e.deltaY;
+        return;
+      }
+    }
+
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -0.12 : 0.12;
+    setZoom(zoomLevel + delta);
+  }, { passive: false });
+
+  // 모바일 핀치 줌
+  let lastDist = 0;
+  window.addEventListener('touchstart', e => {
+    if (e.touches.length === 2) {
+      lastDist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+    }
+  }, { passive: true });
+  window.addEventListener('touchmove', e => {
+    if (e.touches.length === 2) {
+      const dist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      if (lastDist > 0) {
+        setZoom(zoomLevel * (dist / lastDist));
+      }
+      lastDist = dist;
+    }
+  }, { passive: true });
+}
+
+function initPanning() {
+  // 중앙에서 시작
+  panoTarget = panoOffset = Math.max(0, panoW - (window.innerWidth - PANEL_W) / zoomLevel) / 2;
+  startPanoLoop();
+
+  const isMobileDevice = window.innerWidth < 640;
+
+  if (!isMobileDevice) {
+    // ── 데스크탑: 마우스 드래그
+    initMouseDrag();
+    return;
+  }
+
+  // ── 모바일: 터치 드래그 + 자이로
+  initTouchPan();
+
+  const btn = document.getElementById('gyro-hint');
+
+  const startTracking = () => {
+    window.addEventListener('deviceorientation', handleOrientation, { passive: true });
+    gyroEnabled = true;
+    btn.classList.add('active');
+    panoTarget = Math.max(0, panoW - (window.innerWidth - PANEL_W) / zoomLevel) / 2;
+  };
+
+  if (!window.DeviceOrientationEvent) {
+    btn.style.display = 'none';
+    return;
+  }
+
+  if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+    // iOS 13+
+    btn.addEventListener('click', async () => {
+      try {
+        const perm = await DeviceOrientationEvent.requestPermission();
+        if (perm === 'granted') startTracking();
+      } catch(err) { console.warn('gyro permission denied', err); }
+    });
+  } else {
+    // Android
+    startTracking();
+    setTimeout(() => btn.classList.add('active'), 2200);
+  }
+}
+
+function renderDots() {
+  const layer = document.getElementById('dot-layer');
+  layer.innerHTML = '';
+
+  const positions = cachedPositions;
+
+  data.forEach((item, idx) => {
+    const { x, y } = positions[idx];
+    const faded    = activeFilter !== '전체' && item.emotion !== activeFilter;
+    const rot      = itemRotation(item.id);
+
+    const el = document.createElement('div');
+    el.className   = 'map-dot' + (faded ? ' faded' : '') + (activeId === item.id ? ' active' : '');
+    el.style.left  = x + 'px';
+    el.style.top   = y + 'px';
+    el.style.transform = `translate(-50%, -100%) rotate(${rot}deg)`;
+    el.dataset.id      = item.id;
+    el.dataset.emotion = item.emotion;
+
+    const cutoutFile = item.file.replace('images/', 'cutouts/').replace('.jpg', '.png');
+    const labelText = SIGN_CONTENT[item.id] || item.notes || item.id;
+    el.innerHTML = `
+      <div class="dot-inner">
+        <img src="${cutoutFile}" alt="${item.id}"
+             onerror="this.parentElement.classList.add('no-cutout'); this.remove();">
+        <span class="dot-label" data-emotion="${item.emotion}">${labelText}</span>
+      </div>
+    `;
+
+    el.addEventListener('click', () => animateToPanel(item.id));
+    layer.appendChild(el);
+  });
+
+  const visible = activeFilter === '전체'
+    ? data.length
+    : data.filter(d => d.emotion === activeFilter).length;
+  // (count display removed)
+}
+
+// ── PANEL ─────────────────────────────────────────────────────────────
+const emotionColors = {
+  '안내':'#00C8E6','경고':'#FF4D2E','위협':'#FF2D78','명령':'#8B5CF6',
+  '호소':'#00C896','유머':'#FFD200','환대':'#00E07A'
+};
+
+function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+// 감정 영문 매핑
+const emotionEN = {
+  '안내':'Guidance','경고':'Warning','위협':'Threat',
+  '명령':'Command','호소':'Appeal','유머':'Humor','환대':'Hospitality'
+};
+
+// ── 분석 텍스트 생성 ──────────────────────────────────────────────────
+function buildAnalysis(item) {
+  const h = (t) => `<span class="panel-analysis-key">${t}</span>`;
+  const content = SIGN_CONTENT[item.id] || item.notes || '';
+  const emo     = item.emotion     || '';
+  const typo    = item.typography  || '';
+  const mat     = item.material    || '';
+  const env     = item.environment || '';
+  const notes   = item.notes       || '';
+  const isIndoor = env.includes('실내');
+
+  // ── 감정별 도입 ─────────────────────────────────────────────────────
+  const emoIntro = {
+    '안내': `${h(env)}에 자리한 이 안내문은 ${h('안내')}의 언어로 공간을 분절한다. 정보를 전달하는 동시에 행동의 동선을 설계하는 이 글은, 도시 관리의 가장 미세한 단위이기도 하다.`,
+    '경고': `${h(env)}에서 발견된 이 문구는 ${h('경고')}의 어조로 독자를 멈추게 한다. 경고는 항상 어떤 반복된 위반의 역사를 전제로 한다—이 글이 붙기까지 그 자리에 무슨 일이 있었는지 우리는 결코 알 수 없다.`,
+    '위협': `${h(env)} 한편에 붙은 이 글은 ${h('위협')}의 문법을 구사한다. 위협이 효과를 갖기 위해서는 독자가 그것을 믿어야 한다—이 안내문은 신뢰와 공포의 경계 어딘가에 위태롭게 놓여 있다.`,
+    '명령': `${h(env)}에 세워진 이 문장은 ${h('명령')}의 형식으로 말한다. 명령문은 주어를 지운다—글을 쓴 사람도, 읽는 사람도 모두 지워지고 오직 행위만 남는다. 이것이 명령의 폭력이다.`,
+    '호소': `${h(env)}에 놓인 이 문구는 ${h('호소')}의 목소리로 누군가에게 닿으려 한다. 호소는 수신자를 상정한다—이 글에는 특정인을 향한 간절함이 있고, 그 간절함은 서체의 모양 속에서 물리적으로 남아 있다.`,
+    '유머': `${h(env)} 속 이 메모는 ${h('유머')}의 감각으로 일상에 균열을 낸다. 웃음은 거리두기의 방법이기도 하다—이 글을 쓴 사람은 상황에 압도되지 않기 위해 유머를 선택했을 것이다.`,
+    '환대': `${h(env)}에 남겨진 이 인사는 ${h('환대')}의 온기로 공간을 채운다. 환대는 방향을 가진다—이 글을 쓴 사람은 분명 특정 타인을 마음에 두었고, 그 상상된 수신자가 서체의 온도를 결정했다.`,
+  };
+  const intro = emoIntro[emo]
+    || `${h(env)}에서 발견된 이 문구는 ${h(emo)}의 감정을 담고 있다.`;
+
+  // ── 타이포그래피 × 매체 분석 ───────────────────────────────────────
+  const typoRead = {
+    '손글씨': `${h('손글씨')}는 속도와 압력의 기록이다. 획이 빠를수록 의도는 즉흥적이고, 느릴수록 반복 연습의 흔적이 남는다. 이 글의 서체에는 그 순간의 신체적 리듬이 고스란히 새겨져 있다.`,
+    '인쇄':   `${h('인쇄')}는 개인의 흔적을 지운다. 균일한 자간과 정렬된 글줄은 메시지에 비개인적 권위를 부여하며, 이 글은 특정인이 아닌 제도 혹은 규범의 이름으로 말하고 있다.`,
+    '낙서':   `${h('낙서')}는 허락받지 않은 쓰기다. 도구를 고르지 않고, 공간의 주인에게 묻지 않으며—이 글자들은 그런 즉각성과 위반의 에너지를 지금도 방출하고 있다.`,
+    '스티커': `${h('스티커')}는 제작과 부착이 분리된 쓰기다. 어딘가에서 인쇄되어 이 자리에 붙은 이 글은 이동 가능성과 복제 가능성을 동시에 품는다—얼마나 많은 곳에 같은 말이 붙어 있을까.`,
+    '포스트잇':`${h('포스트잇')}은 임시성을 전제한 매체다. 떼어낼 수 있다는 사실이 역설적으로 메시지의 절박함을 강조한다—이 글을 쓴 사람은 영원을 원하지 않았지만, 분명히 지금 이 순간 읽히기를 원했다.`,
+    '혼합':   `이 안내문에는 ${h('두 개의 시간')}이 겹쳐 있다. 먼저 인쇄된 공식 문구 위에 손으로 쓴 개인의 목소리—두 서체의 충돌은 공간을 둘러싼 권력 관계와 그것에 균열을 내려는 의지를 시각화한다.`,
+  };
+  const typoKey = Object.keys(typoRead).find(k => typo.includes(k)) || '';
+  const typoLine = typoKey ? typoRead[typoKey] : `${h(typo)} 방식으로 제작된 이 글은 ${h(mat)} 위에 새겨져 있다.`;
+
+  // ── 작성자 추론 ─────────────────────────────────────────────────────
+  const authorData = [
+    { typo:'손글씨', env:'차량',       author:'차주',
+      inference:`차 안에 이 글을 붙인 사람은 외부의 시선을 통제하고 싶었을 것이다. 차량은 사적 공간이지만 동시에 공공에 노출된 공간—이 글은 그 경계에서 발화된 소유권 선언이다.` },
+    { typo:'손글씨', env:'골목',       author:'지역 거주자 혹은 종교인',
+      inference:`이 글자의 반듯함은 오랜 쓰기 습관에서 비롯된 것처럼 보인다. 골목의 일상을 지켜온 누군가가, 어떤 신념이나 관습의 언어로 공간에 흔적을 남겼다.` },
+    { typo:'손글씨', env:'상가',       author:'가게 주인',
+      inference:`가게 주인의 손글씨는 계약서도 메뉴판도 아닌 중간 어딘가에 있다. 이 글에는 상업적 의도와 개인적 부탁이 혼재하며, 그 어색한 혼합이 오히려 독자를 멈추게 한다.` },
+    { typo:'낙서',   env:'',           author:'익명의 행인',
+      inference:`이 낙서를 남긴 사람은 이미 사라졌다. 그가 무엇을 느꼈는지, 왜 이 자리를 선택했는지—우리는 글자의 형태에서 그 심리적 압력을 역으로 추측할 수 있을 뿐이다.` },
+    { typo:'혼합',   env:'지하주차장', author:'두 개의 다른 주체',
+      inference:`지하주차장의 반복된 갈등이 이 안내문을 만들었다. 먼저 인쇄된 규칙에 누군가 손으로 덧붙인 말—그것은 제도가 실패한 지점에 개인이 개입한 흔적이다.` },
+    { typo:'혼합',   env:'',           author:'복수의 작성 주체',
+      inference:`이 안내문에는 여러 손의 흔적이 있다. 서체의 층위가 곧 시간의 층위이며, 각 획은 서로 다른 사람의 필요와 분노와 선의를 담고 있다.` },
+    { typo:'인쇄',   env:'상가',       author:'상업적 또는 공공기관 주체',
+      inference:`이 인쇄물은 설득의 도구다. 균일한 폰트는 개인적 감정을 배제하고 메시지에 보편성을 입힌다—하지만 그 보편성이야말로 이 글이 실제로 누구를 위한 것인지 감추는 방식이기도 하다.` },
+    { typo:'인쇄',   env:'',           author:'기관 혹은 제도적 주체',
+      inference:`인쇄는 복수를 전제한다. 이 한 장의 안내문은 아마 수십 장과 함께 제작되었을 것이다—이 공간을 규정하는 권력이 얼마나 광범위하게 같은 말을 반복하는지가 그 배면에 있다.` },
+    { typo:'스티커', env:'',           author:'이동하는 행위자',
+      inference:`스티커는 전략적 매체다. 부착 위치를 선택하고, 그 위치에 특정 의미를 심는다—이 글을 붙인 사람은 자신이 보이지 않아도 메시지가 남는 형식을 의도적으로 선택했을 가능성이 높다.` },
+    { typo:'포스트잇', env:'',         author:'공간의 임시 점유자',
+      inference:`포스트잇을 선택한 것은 어쩌면 망설임의 표시일 수 있다. 영구적인 표시를 남기기에는 확신이 부족했거나, 상대가 이 글을 읽고 나면 자신이 거두어 가리라 기대했을 것이다.` },
+  ];
+  const aMatch = authorData.find(r =>
+    typo.includes(r.typo) && (r.env === '' || env.includes(r.env))
+  ) || { author: '미상의 작성자', inference: `이 글이 어떤 손에서 나왔는지 우리는 알 수 없다. 그러나 서체가 남긴 압력과 속도와 방향은—그 사람이 이 글을 쓰던 순간의 감정을 미약하게나마 전한다.` };
+
+  const authorLine = `이 글을 남긴 것은 ${h(aMatch.author)}으로 추정된다. ${aMatch.inference}`;
+
+  // 세 부분을 이어 1개 단락으로
+  // intro 끝 마침표 제거 후 연결
+  const introClean = intro.replace(/\.\s*$/, '');
+  const typoClean  = typoLine.replace(/\.\s*$/, '');
+  return `${introClean}. ${typoClean}. ${authorLine}`;
+}
+
+// ── 아이콘 클릭 → 줌인 애니메이션 → 패널 오픈 ──────────────────────
+function animateToPanel(id) {
+  const idx = data.findIndex(d => d.id === id);
+  const pos = cachedPositions && cachedPositions[idx];
+
+  // 위치 정보 없으면 바로 패널 열기
+  if (!pos) { openPanel(id); return; }
+
+  const TARGET_ZOOM = 1.75;
+  // 패널(우측 40vw)을 고려해 도트를 화면 좌측 30% 지점에 위치
+  const screenX = window.innerWidth  * 0.30;
+  const screenY = window.innerHeight * 0.70;
+
+  const newPanoX = Math.max(0, pos.x - screenX / TARGET_ZOOM);
+  const newPanoY = Math.max(0, pos.y - screenY / TARGET_ZOOM);
+
+  const startZoom = zoomLevel;
+  const startTime = performance.now();
+  const ZOOM_DUR  = 420; // ms
+
+  function tick(now) {
+    const t    = Math.min((now - startTime) / ZOOM_DUR, 1);
+    const ease = 1 - Math.pow(1 - t, 3); // ease-out cubic
+
+    // 줌 보간
+    zoomLevel = startZoom + (TARGET_ZOOM - startZoom) * ease;
+    const label = document.getElementById('zoom-label');
+    if (label) label.textContent = Math.round(zoomLevel * 100) + '%';
+
+    // 패닝 타겟 동기화 (루프가 lerp 처리)
+    panoTarget  = newPanoX;
+    panoTargetY = newPanoY;
+
+    if (t < 1) {
+      requestAnimationFrame(tick);
+    } else {
+      zoomLevel = TARGET_ZOOM;
+      // 버튼 UI 갱신만 (setZoom은 position을 snap하므로 직접 업데이트)
+      const lbl   = document.getElementById('zoom-label');
+      const btnO  = document.getElementById('zoom-out');
+      if (lbl)  lbl.textContent = Math.round(TARGET_ZOOM * 100) + '%';
+      if (btnO) { btnO.disabled = false; btnO.style.opacity = ''; btnO.style.cursor = ''; }
+      // lerp 안착 후 패널 오픈
+      setTimeout(() => openPanel(id), 280);
+    }
+  }
+  requestAnimationFrame(tick);
+}
+
+function openPanel(id) {
+  const item = data.find(d => d.id === id);
+  if (!item) return;
+  activeId = id;
+
+  // about 패널 닫기
+  document.getElementById('about-panel').classList.remove('open');
+  document.body.classList.remove('about-open');
+
+  // 다른 항목으로 이동 시 서브 패널 닫기
+  closeKeywordPanel();
+
+  // 제목 목록 active 표시 갱신
+  document.querySelectorAll('.emo-title-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.id === id);
+  });
+
+  const color = emotionColors[item.emotion] || '#fff';
+  const panel = document.getElementById('panel');
+  panel.style.setProperty('--panel-color', color);
+
+  // 데이터 채우기
+  document.getElementById('panel-img-el').src = item.file;
+  document.getElementById('panel-text').textContent     = SIGN_CONTENT[item.id] || item.notes || '—';
+  document.getElementById('panel-title-en').textContent = emotionEN[item.emotion] || item.emotion;
+
+  // 분석 글 생성
+  const analysisEl = document.getElementById('panel-analysis');
+  analysisEl.innerHTML = buildAnalysis(item);
+  panel.classList.add('open');
+  document.body.classList.add('panel-open');
+
+  renderDots();
+  // 스크롤 맨 위로
+  const mainEl = document.querySelector('.panel-main');
+  if (mainEl) mainEl.scrollTop = 0;
+}
+
+function closePanel() {
+  activeId = null;
+  document.getElementById('panel').classList.remove('open');
+  document.body.classList.remove('panel-open');
+  closeKeywordPanel();
+  renderDots();
+  document.querySelectorAll('.emo-title-item').forEach(el => el.classList.remove('active'));
+  if (isPanoMode()) startPanoLoop();
+
+  // 패널 닫을 때 100%로 부드럽게 줌아웃
+  const startZoom = zoomLevel;
+  if (startZoom <= 1.0) return;
+  const startTime = performance.now();
+  const ZOOM_DUR  = 380;
+  function zoomOut(now) {
+    const t    = Math.min((now - startTime) / ZOOM_DUR, 1);
+    const ease = 1 - Math.pow(1 - t, 3);
+    zoomLevel  = startZoom + (1.0 - startZoom) * ease;
+    const lbl  = document.getElementById('zoom-label');
+    if (lbl) lbl.textContent = Math.round(zoomLevel * 100) + '%';
+    if (t < 1) {
+      requestAnimationFrame(zoomOut);
+    } else {
+      setZoom(1.0);
+    }
+  }
+  requestAnimationFrame(zoomOut);
+}
+
+// ── 키워드 팝업 ───────────────────────────────────────────────────────
+function closeKeywordPanel() {
+  document.getElementById('keyword-panel').classList.remove('open');
+  document.body.classList.remove('kw-open');
+  document.querySelectorAll('.panel-analysis-key.kw-active').forEach(el => el.classList.remove('kw-active'));
+}
+
+function openKeywordPanel(keyword, sourceEl) {
+  const kw = keyword.trim().toLowerCase();
+
+  // 같은 키워드 재클릭 → 닫기
+  if (sourceEl.classList.contains('kw-active')) {
+    closeKeywordPanel();
+    return;
+  }
+
+  // 이전 active 해제 후 현재 활성화
+  document.querySelectorAll('.panel-analysis-key.kw-active').forEach(el => el.classList.remove('kw-active'));
+  sourceEl.classList.add('kw-active');
+
+  // 데이터 검색 — 전체 필드에서 키워드 포함 항목
+  const matches = data.filter(item => {
+    const fields = [
+      item.emotion, item.typography, item.material, item.environment,
+      item.notes, SIGN_CONTENT[item.id] || '', emotionEN[item.emotion] || ''
+    ];
+    return fields.some(f => f && f.toLowerCase().includes(kw));
+  });
+
+  // 결과 렌더링
+  const list = document.getElementById('kw-list');
+  list.innerHTML = '';
+  matches.forEach(item => {
+    const el = document.createElement('div');
+    el.className = 'emo-title-item';
+    el.dataset.emotion = item.emotion;
+    el.dataset.id = item.id;
+    el.style.setProperty('--emo-color', emotionColors[item.emotion] || '#fff');
+    el.textContent = SIGN_CONTENT[item.id] || item.notes || `#${item.id}`;
+    el.addEventListener('click', () => {
+      openPanel(item.id);
+      closeKeywordPanel();
+    });
+    list.appendChild(el);
+  });
+
+  document.getElementById('keyword-panel').classList.add('open');
+  document.body.classList.add('kw-open');
+}
+
+// 분석 텍스트 내 키워드 클릭 / 배경 클릭 위임
+document.getElementById('panel').addEventListener('click', e => {
+  const key = e.target.closest('.panel-analysis-key');
+  if (key) {
+    e.stopPropagation();
+    openKeywordPanel(key.textContent, key);
+    return;
+  }
+  // 배경(키워드 박스 외 영역) 클릭 → 서브 패널 닫기
+  if (document.body.classList.contains('kw-open')) {
+    closeKeywordPanel();
+  }
+});
+
+document.getElementById('panel-close').addEventListener('click', closePanel);
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closePanel(); });
+
+
+
+
+// ── WALL TEXTURE BACKGROUND ───────────────────────────────────────────
+const WALL_TEXTURES = [
+  'textures/29d5f2dce53f8b403c8003f0cb2ff721.jpg',
+  'textures/3ebacde11c9ff969c0ff16962cc9f585.jpg',
+  'textures/410506f8f87c8fb4e946d47327c9a8f4.jpg',
+  'textures/60311b611c8fb759a2ddf91a3df3df9f.jpg',
+  'textures/7404ab5709e49acfb7ba9d9d0812ee4f.jpg',
+  'textures/8a52295beb951e5f5a82a5f182b301dd.jpg',
+  'textures/994e88e8c78cc133b09332ab5996ec17.jpg',
+  'textures/9dd91921f0e9b361f3da549210aab0dc.jpg',
+  'textures/ae70fdacbcbce6c02f0beab4e38a91e8.jpg',
+  'textures/cf264b5341803ff4cf7022f2118c81e3.jpg',
+  'textures/d9ff8c6bcc6feef15ecead386d146ba0.jpg',
+  'textures/f86294d4d81a15bc90b9cc0df326850b.jpg',
+];
+
+function applyWallTexture() {
+  const wallBg = document.getElementById('wall-bg');
+  const pick   = WALL_TEXTURES[Math.floor(Math.random() * WALL_TEXTURES.length)];
+  const img    = new Image();
+  img.onload = () => {
+    wallBg.style.backgroundImage = `url('${pick}')`;
+  };
+  img.onerror = () => {
+    // 텍스처 없으면 단색 배경 폴백
+    document.body.style.background = '#8e8e86';
+  };
+  img.src = pick;
+}
+
+// ── EMOTION PANEL ─────────────────────────────────────────────────────
+
+function populateTitles(filteredTag) {
+  const container = document.getElementById('emo-titles');
+  container.innerHTML = '';
+  const tag = filteredTag || '전체';
+  const filtered = tag === '전체' ? data : data.filter(d => d.emotion === tag);
+
+  filtered.forEach(item => {
+    const content = SIGN_CONTENT[item.id] || item.notes || '—';
+    const shortText = content.replace(/\n/g, ' ').slice(0, 38)
+                   + (content.length > 38 ? '…' : '');
+    const div = document.createElement('div');
+    div.className = 'emo-title-item' + (activeId === item.id ? ' active' : '');
+    div.dataset.emotion = item.emotion;
+    div.dataset.id = item.id;
+    div.textContent = shortText;
+    div.addEventListener('click', () => openPanel(item.id));
+    container.appendChild(div);
+  });
+}
+
+// 제목 목록 표시/숨김 헬퍼
+function showTitles() {
+  document.getElementById('emo-titles').classList.add('visible');
+  document.querySelector('.emo-divider').classList.add('visible');
+  document.body.classList.add('titles-open');
+  // 선택된 행만 남기고 나머지 숨김
+  document.querySelectorAll('.emo-row').forEach(r => {
+    r.style.display = r.classList.contains('active') ? '' : 'none';
+  });
+}
+function hideTitles() {
+  document.getElementById('emo-titles').classList.remove('visible');
+  document.querySelector('.emo-divider').classList.remove('visible');
+  document.body.classList.remove('titles-open');
+  // 모든 행 다시 표시
+  document.querySelectorAll('.emo-row').forEach(r => {
+    r.style.display = '';
+    r.classList.remove('active');
+  });
+  activeFilter = '전체';
+  renderDots();
+}
+
+// 감정 행 클릭 — 필터 + 제목 목록 갱신
+document.getElementById('emo-list').addEventListener('click', e => {
+  const row = e.target.closest('.emo-row');
+  if (!row) return;
+  // 이미 active인 같은 행 클릭 → 접기
+  if (row.classList.contains('active')) {
+    hideTitles();
+    return;
+  }
+  document.querySelectorAll('.emo-row').forEach(r => r.classList.remove('active'));
+  row.classList.add('active');
+  activeFilter = row.dataset.tag;
+  renderDots();
+  populateTitles(activeFilter);
+  showTitles();
+});
+
+// 지도(dot-layer) 빈 공간 클릭 → 제목 숨김
+document.getElementById('dot-layer').addEventListener('click', e => {
+  if (e.target.closest('.map-dot')) return;  // dot 클릭은 무시
+  if (document.getElementById('emo-titles').classList.contains('visible')) {
+    hideTitles();
+  }
+});
+
+// ── INIT ──────────────────────────────────────────────────────────────
+applyWallTexture();
+computePositions();
+renderDots();
+
+// About 패널 감정 태그에 이미지 수 표시
+document.querySelectorAll('.about-emo-item[data-e]').forEach(item => {
+  const emo = item.dataset.e;
+  const count = data.filter(d => d.emotion === emo).length;
+  const descEl = item.querySelector('.about-emo-desc');
+  if (descEl) descEl.textContent = count + '장';
+});
+
+// 파노라마 + 패닝 초기화 (데스크탑: 마우스드래그 / 모바일: 자이로+터치)
+initPanning();
+initZoomButtons();
+
+// ── About 패널 ──────────────────────────────────────────────────────────
+(function initAbout() {
+  const panel  = document.getElementById('about-panel');
+  const closeBtn = document.getElementById('about-panel-close');
+
+  function openAbout() {
+    panel.classList.add('open');
+    document.body.classList.add('about-open');
+  }
+  function closeAbout() {
+    panel.classList.remove('open');
+    document.body.classList.remove('about-open');
+  }
+
+  document.getElementById('logo-btn').addEventListener('click', openAbout);
+  closeBtn.addEventListener('click', closeAbout);
+})();
+
+// ── 뷰 토글 버튼 ────────────────────────────────────────────────────────
+(function initViewButtons() {
+  const btnGlow = document.getElementById('btn-glow');
+  const btnText = document.getElementById('btn-text');
+
+  btnGlow.addEventListener('click', () => {
+    const on = document.body.classList.toggle('dots-glow');
+    btnGlow.classList.toggle('active', on);
+    if (on) {
+      document.body.classList.remove('dots-text');
+      btnText.classList.remove('active');
+    }
+  });
+
+  btnText.addEventListener('click', () => {
+    const on = document.body.classList.toggle('dots-text');
+    btnText.classList.toggle('active', on);
+    if (on) {
+      document.body.classList.remove('dots-glow');
+      btnGlow.classList.remove('active');
+    }
+  });
+})();
+
+let _resizeTimer = null;
+window.addEventListener('resize', () => {
+  clearTimeout(_resizeTimer);
+  _resizeTimer = setTimeout(() => {
+    computePositions();
+    renderDots();
+    panoTarget = panoOffset = Math.max(0, panoW - (window.innerWidth - PANEL_W) / zoomLevel) / 2;
+    startPanoLoop();
+  }, 120);
+});
+
+// ── 제보 데이터 → 지도에 로드 (업로드 기능 제거됨)
+</script>
+</body>
+</html>

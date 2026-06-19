@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>도시의 목소리 — 손글씨 안내문 아카이브</title>
+<style>
+  :root {
+    --bg: #f5f4f0;
+    --fg: #1a1a1a;
+    --muted: #888;
+    --border: #ddd;
+
+    --분노: #c0392b;
+    --호소: #2980b9;
+    --유머: #f39c12;
+    --명령: #2c3e50;
+    --경고: #e67e22;
+    --위협: #8e44ad;
+    --친근: #27ae60;
+    --냉소: #7f8c8d;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  /* HEADER */
+  header {
+    padding: 60px 40px 40px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 40px;
+  }
+
+  .header-left h1 {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    margin-bottom: 8px;
+  }
+
+  .header-left p {
+    color: var(--muted);
+    font-size: 13px;
+    max-width: 420px;
+    word-break: keep-all;
+  }
+
+  .header-right {
+    font-size: 12px;
+    color: var(--muted);
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  .header-right span {
+    display: block;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--fg);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  /* CONTROLS */
+  .controls {
+    padding: 20px 40px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .filter-label {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-right: 4px;
+  }
+
+  .tag-btn {
+    padding: 5px 12px;
+    border-radius: 2px;
+    border: 1px solid var(--border);
+    background: white;
+    cursor: pointer;
+    font-size: 12px;
+    font-family: inherit;
+    color: var(--muted);
+    transition: all 0.15s;
+  }
+
+  .tag-btn:hover { border-color: var(--fg); color: var(--fg); }
+
+  .tag-btn.active {
+    background: var(--fg);
+    color: white;
+    border-color: var(--fg);
+  }
+
+  .tag-btn[data-tag="분노"].active  { background: var(--분노); border-color: var(--분노); }
+  .tag-btn[data-tag="호소"].active  { background: var(--호소); border-color: var(--호소); }
+  .tag-btn[data-tag="유머"].active  { background: var(--유머); border-color: var(--유머); }
+  .tag-btn[data-tag="명령"].active  { background: var(--명령); border-color: var(--명령); }
+  .tag-btn[data-tag="경고"].active  { background: var(--경고); border-color: var(--경고); }
+  .tag-btn[data-tag="위협"].active  { background: var(--위협); border-color: var(--위협); }
+  .tag-btn[data-tag="친근"].active  { background: var(--친근); border-color: var(--친근); }
+  .tag-btn[data-tag="냉소"].active  { background: var(--냉소); border-color: var(--냉소); }
+
+  .count {
+    margin-left: auto;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  /* GRID */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1px;
+    background: var(--border);
+    border-top: 1px solid var(--border);
+  }
+
+  .card {
+    background: var(--bg);
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+
+  .card:hover { background: white; }
+
+  .card.hidden { display: none; }
+
+  .card-img {
+    width: 100%;
+    aspect-ratio: 4/3;
+    overflow: hidden;
+    background: #e8e6e0;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .card-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  /* placeholder when no image */
+  .card-img .placeholder-text {
+    font-size: 18px;
+    font-weight: 700;
+    color: #bbb;
+    text-align: center;
+    padding: 20px;
+    line-height: 1.4;
+    letter-spacing: -0.02em;
+    display: none;
+  }
+
+  .card-img img.broken { display: none; }
+  .card-img img.broken + .placeholder-text { display: block; }
+
+  .card-body {
+    padding: 14px 16px 16px;
+  }
+
+  .card-tag {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    padding: 2px 7px;
+    border-radius: 1px;
+    margin-bottom: 8px;
+    color: white;
+  }
+
+  .card-text {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.4;
+    margin-bottom: 6px;
+    word-break: keep-all;
+  }
+
+  .card-meta {
+    font-size: 11px;
+    color: var(--muted);
+    display: flex;
+    gap: 10px;
+  }
+
+  /* MODAL */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+  }
+
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: var(--bg);
+    max-width: 780px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .modal-img {
+    aspect-ratio: 3/4;
+    overflow: hidden;
+    background: #e8e6e0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .modal-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .modal-img .placeholder-text {
+    font-size: 28px;
+    font-weight: 700;
+    color: #bbb;
+    padding: 30px;
+    text-align: center;
+    line-height: 1.3;
+    display: none;
+  }
+
+  .modal-img img.broken { display: none; }
+  .modal-img img.broken + .placeholder-text { display: block; }
+
+  .modal-content {
+    padding: 36px 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .modal-tag {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    padding: 3px 9px;
+    border-radius: 1px;
+    color: white;
+    width: fit-content;
+  }
+
+  .modal-text {
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.3;
+    word-break: keep-all;
+  }
+
+  .modal-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .modal-field label {
+    display: block;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin-bottom: 3px;
+  }
+
+  .modal-field p {
+    font-size: 13px;
+    word-break: keep-all;
+  }
+
+  .modal-close {
+    position: absolute;
+    top: 16px;
+    right: 20px;
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: white;
+    line-height: 1;
+  }
+
+  /* color map */
+  .emotion-분노 { background: var(--분노); }
+  .emotion-호소 { background: var(--호소); }
+  .emotion-유머 { background: var(--유머); }
+  .emotion-명령 { background: var(--명령); }
+  .emotion-경고 { background: var(--경고); }
+  .emotion-위협 { background: var(--위협); }
+  .emotion-친근 { background: var(--친근); }
+  .emotion-냉소 { background: var(--냉소); }
+
+  @media (max-width: 600px) {
+    header { padding: 30px 20px 24px; flex-direction: column; align-items: flex-start; }
+    .controls { padding: 14px 20px; }
+    .grid { grid-template-columns: repeat(2, 1fr); }
+    .modal { grid-template-columns: 1fr; }
+    .modal-img { aspect-ratio: 4/3; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <h1>도시의 목소리</h1>
+    <p>같은 말, 다른 감정. 도시 곳곳의 손글씨 안내문·경고문을 감정 언어로 분류한 아카이브.</p>
+  </div>
+  <div class="header-right">
+    <span id="total-count">18</span>
+    수집된 문서
+  </div>
+</header>
+
+<div class="controls">
+  <span class="filter-label">감정</span>
+  <button class="tag-btn active" data-tag="전체">전체</button>
+  <button class="tag-btn" data-tag="분노">분노</button>
+  <button class="tag-btn" data-tag="호소">호소</button>
+  <button class="tag-btn" data-tag="유머">유머</button>
+  <button class="tag-btn" data-tag="명령">명령</button>
+  <button class="tag-btn" data-tag="경고">경고</button>
+  <button class="tag-btn" data-tag="위협">위협</button>
+  <button class="tag-btn" data-tag="친근">친근</button>
+  <button class="tag-btn" data-tag="냉소">냉소</button>
+  <span class="count" id="visible-count">18개 표시 중</span>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<div class="modal-overlay" id="modal-overlay">
+  <button class="modal-close" id="modal-close">×</button>
+  <div class="modal" id="modal-content-box"></div>
+</div>
+
+<script>
+const data = [
+  {
+    id: "001",
+    file: "images/001.jpg",
+    text: "가치가지 마시오 / 가지가지 마시오",
+    emotion: "유머",
+    material: "목재판 2점(각 약 40×30cm 추정)에 검정 유성 페인트를 붓으로 직접 도포. 글씨 크기가 두 판 사이에 달라 같은 손이 다른 순간에 쓴 것으로 보임.",
+    environment: "시멘트 블록과 주변 돌로 고정된 채 골목 바닥에 놓여 있음. 두 판이 서로 다른 각도로 기울어져 통행을 막는 물리적 설치물로 기능. 뒤편에 쓰레기통이 보임.",
+    notes: "금지 문구를 쓰면서 언어유희를 넣었다는 것 — 이 사람은 화가 났지만 동시에 재미있었다. '가치가지'와 '가지가지'를 나란히 쓴 순간, 작성자 스스로도 웃었을 것이다."
+  },
+  {
+    id: "002",
+    file: "images/002.jpg",
+    text: "쓰레기는 각자 가져가시기 바랍니다",
+    emotion: "명령",
+    material: "녹색 배경에 붉은 텍스트로 디지털 인쇄된 A4 크기 안내문 3점. 코팅 처리 후 상단에 구멍을 뚫어 끈으로 매달았으며, 비닐 포장 흔적이 남아 있음.",
+    environment: "실내 벽면, 균등한 간격으로 나란히 3장이 걸려 있음. 벽 뒤로 노란 안전 테이프가 보이며 물류 또는 공용 작업 공간으로 추정됨.",
+    notes: "세 번 반복 게시했다는 것은 한 번으로는 부족했다는 뜻이다. 이미 여러 번 같은 말을 해왔고, 지쳐서 종이에 위임한 사람."
+  },
+  {
+    id: "003",
+    file: "images/003.jpg",
+    text: "여기에 쓰레기 놓지 마시오",
+    emotion: "호소",
+    material: "흰색 부직포 포대(약 50×40cm) 위에 검정 유성 매직으로 직접 기재. 글씨 획이 고르지 않아 거친 표면 위에서 쓴 것으로 보임.",
+    environment: "녹색 쓰레기 수거함 바로 옆 골목 바닥에 놓여 있음. 포대 자체가 쓰레기 수거용 자루로, 안내문이 적힌 물체가 곧 쓰레기를 담는 물체이기도 함.",
+    notes: "포대 위에 직접 썼다는 건 다른 재료가 없었다는 뜻이거나, 가장 가까이 있는 것에 즉흥적으로 썼다는 뜻이다. 절박하지 않고 그냥 지쳐 있는 사람의 필체."
+  },
+  {
+    id: "004",
+    file: "images/004.jpg",
+    text: "사유지입니다. 함부로 들어오지 마세요",
+    emotion: "호소",
+    material: "A4 백지에 볼펜 수기, 비코팅. 글씨는 비교적 정돈되어 있으나 줄이 약간 기울어짐.",
+    environment: "다수의 화분과 식물들로 가득 찬 개인 마당 입구. 흰 종이가 초록 식물들 사이에 꽂혀 있어 시각적으로 거의 보이지 않음. 돌봄이 느껴지는 공간.",
+    notes: "화분을 이렇게 많이 키우는 사람이 쓴 글씨. 공격적이지 않고 그냥 알려주고 싶었던 것. 들어오지 말라는 말인데 어딘가 초대처럼 읽힌다."
+  },
+  {
+    id: "005",
+    file: "images/005.jpg",
+    text: "통행로 무단주차 단속",
+    emotion: "경고",
+    material: "백색 바탕에 적색 및 흑색 디지털 인쇄 스티커. 코팅 처리되어 있으며 기둥 표면에 직접 부착됨. 약 20×10cm 추정.",
+    environment: "지하 주차장 콘크리트 기둥. 기둥 전체에 녹색 페인트가 칠해져 있고 스티커는 눈높이 아래 부착되어 있음. 뒤편으로 주차된 차량들이 보임.",
+    notes: "인쇄 스티커를 주문해서 붙였다는 것은 이미 여러 번 같은 문제가 반복된 후 내린 결정이다. 분노보다는 지속적 단속 의지."
+  },
+  {
+    id: "006",
+    file: "images/006.jpg",
+    text: "쓰레기를 왜 갖다 놔?!",
+    emotion: "분노",
+    material: "A4 용지에 디지털 인쇄. 실제 쓰레기가 쌓인 현장 사진을 증거로 포함하여 출력. 코팅 없이 직접 부착.",
+    environment: "건물 외벽 모서리, 눈높이에 부착. 바로 아래 실제 쓰레기가 쌓여 있던 흔적이 있어 보임. 사진 속 장소와 부착 장소가 동일.",
+    notes: "사진까지 인쇄해서 붙였다. 그냥 화가 난 게 아니라 '증거를 보여주겠다'는 의지. '왜'라는 단어에 이 사람의 감정이 다 담겨 있다."
+  },
+  {
+    id: "007",
+    file: "images/007.jpg",
+    text: "눈 충격 조심!",
+    emotion: "경고",
+    material: "흰 바탕에 적색 텍스트와 눈에 충격이 가해지는 삽화가 인쇄된 카드 형태. 검정 플라스틱 액자에 끼워져 있으며 전체 크기 약 15×10cm 추정.",
+    environment: "금속 재질의 실내 벽면에 부착. 주변에 유사한 안전 안내물이 있을 것으로 추정되는 작업 환경. 액자 처리로 인해 임시가 아닌 영구 설치물처럼 보임.",
+    notes: "액자에 넣었다는 것은 이게 오래 걸려 있을 것이라고 생각한 사람. 시각적 설득을 믿는 사람이 만든 안내문."
+  },
+  {
+    id: "008",
+    file: "images/008.jpg",
+    text: "공간 개인 사용 금지",
+    emotion: "명령",
+    material: "A5 이하 크기의 백지에 검정 볼펜 수기. 테이프로 벽에 고정. 획이 단호하고 간격이 좁음.",
+    environment: "낡은 의자 바로 위 벽면. 흰 벽에 오염 흔적이 보이며 공용 또는 반공용 실내 공간으로 추정. 의자와 텍스트가 세트로 공간을 점유하고 있음.",
+    notes: "짧고 빠르게 썼다. 길게 설명할 마음이 없고 그냥 못 박아두고 싶었던 것. 의자도 텍스트도 같은 목적으로 거기 있다."
+  },
+  {
+    id: "009",
+    file: "images/009.jpg",
+    text: "세워두고 가이요! 문도 잠그지 말고 키도 꽂아 주세요",
+    emotion: "친근",
+    material: "분홍 바탕에 흑색 텍스트 인쇄 스티커. 약 20×7cm의 가로형. 코팅 처리되어 있음.",
+    environment: "실내 벽면 낮은 위치에 부착. 주변으로 주차 관련 시설물이 있는 것으로 보아 소규모 주차 대행 또는 카센터 공간으로 추정됨.",
+    notes: "'가이요'라는 구어체를 선택했다. 딱딱하게 쓰고 싶지 않았던 것. 요구 내용은 꽤 구체적이고 강한데 말투는 최대한 부드럽게 유지하려 한 사람."
+  },
+  {
+    id: "010",
+    file: "images/010.jpg",
+    text: "이 앞에 주차하면 가만 안 둠",
+    emotion: "위협",
+    material: "노란 바탕 종이(약 25×20cm)에 검정 유성 매직으로 수기. 상단이 파이프에 테이프로 고정됨. 글씨 크기가 일정하지 않아 흥분 상태에서 쓴 것으로 보임.",
+    environment: "외벽 가스 계량기 두 개 사이에 부착. 파이프가 복잡하게 교차하는 좁은 공간. 차량이 접근하기 어려운 위치임에도 안내문이 존재함 — 실제로 누군가 주차했다는 의미.",
+    notes: "'가만 안 둠'은 표준어도 경어도 아니다. 격식을 포기한 순간의 언어. 이 사람은 쓰는 동안 이미 화가 나 있었다."
+  },
+  {
+    id: "011",
+    file: "images/011.jpg",
+    text: "모든 주차 자제 부탁드립니다",
+    emotion: "호소",
+    material: "붉은 유성 페인트를 붓으로 직접 벽돌 표면에 도포. 글씨 크기 약 10cm. 벽돌의 요철로 인해 획이 군데군데 끊겨 있음.",
+    environment: "오래된 붉은 벽돌 담벼락. 텍스트 색상이 벽돌과 유사하여 멀리서 잘 보이지 않음. 담 너머로 개인 주거 공간이 있는 것으로 추정됨.",
+    notes: "페인트를 직접 벽에 발랐다는 건 이게 영구적인 메시지라는 선언이다. 그런데 내용은 '부탁드립니다'로 끝난다. 강한 행동과 겸손한 말투의 충돌."
+  },
+  {
+    id: "012",
+    file: "images/012.jpg",
+    text: "이곳에 쓰레기를 버리지 맙시다",
+    emotion: "호소",
+    material: "흰 천 현수막(약 150×30cm 추정)에 검정 텍스트 인쇄. 양 끝에 구멍을 내어 파이프에 끈으로 고정.",
+    environment: "건물 외벽 하단, 노출된 배수 파이프 바로 위에 설치. 현수막 아래 바닥에 쓰레기 투기 흔적이 남아 있어 보임. 반복적으로 같은 자리에 쓰레기가 버려졌을 것으로 추정됨.",
+    notes: "현수막을 직접 제작해서 설치했다. 이건 즉흥이 아닌 계획된 호소. '맙시다'는 같이 하자는 말 — 혼자 지키는 게 지쳐서 모두에게 책임을 나누고 싶었던 것."
+  },
+  {
+    id: "013",
+    file: "images/013.jpg",
+    text: "주차금지",
+    emotion: "위협",
+    material: "목재판(약 30×15cm)에 검정 유성 페인트 수기. 오래된 나무의자와 함께 골목 입구에 설치됨.",
+    environment: "낡은 철문 앞 좁은 골목 입구. 의자가 텍스트 판과 함께 물리적 진입 장벽을 형성. 문 옆으로 낡은 마대 자루가 쌓여 있음. 텍스트 없이도 의자만으로 의미가 전달되는 구조.",
+    notes: "말만으로 안 된다는 걸 알고 있다. 그래서 의자를 놓았다. 텍스트는 보조 수단이고 진짜 메시지는 물리적 점유."
+  },
+  {
+    id: "014",
+    file: "images/014.jpg",
+    text: "주차금지 (공식 표지판) + 손글씨 추가 메모",
+    emotion: "냉소",
+    material: "시 설치 금속 원형 표지판에 소형 종이 메모(약 10×8cm)를 테이프로 추가 부착. 두 가지 재료의 제도적 위상 차이가 극명함.",
+    environment: "도로변 인도. 공식 주차금지 표지판이 이미 설치되어 있음에도 별도 손글씨 메모가 추가된 상태. 표지판 아래 실제 주차된 차량들이 배경에 보임.",
+    notes: "국가가 세운 표지판을 믿지 않아서 자기가 직접 추가했다. 제도에 대한 불신을 행동으로 보여준 것. 분노가 아니라 체념에서 나온 안내문."
+  },
+  {
+    id: "015",
+    file: "images/015.jpg",
+    text: "여기 쓰레기 버리지 마세요",
+    emotion: "호소",
+    material: "A5 이하 크기의 백지에 검정 볼펜 수기. 코팅 없이 바닥에 직접 놓인 상태.",
+    environment: "건물 계단 입구 바닥 타일 위. 종이가 바닥에 그냥 놓여 있어 쉽게 밟히거나 날아갈 수 있는 위치. 주변에 쓰레기 투기 흔적이 있는 것으로 추정됨.",
+    notes: "바닥에 놓았다. 벽에 붙일 테이프도 없었거나, 너무 지쳐서 그냥 내려놓은 것이다. 이 안내문이 무시될 거라는 걸 이미 알면서 쓴 것 같다."
+  },
+  {
+    id: "016",
+    file: "images/016.jpg",
+    text: "쓰레기 여기저기 버리지 마세요",
+    emotion: "친근",
+    material: "흰 천 현수막(약 120×20cm 추정)에 컬러 인쇄. 꽃 무늬 테두리가 포함된 디자인. 양 끝에 구멍을 내어 고정.",
+    environment: "회색 콘크리트 건물 외벽 하단, 잔디와 경계면 위. 식물 옆에 설치되어 있어 생활 공간과 맞닿아 있음. 주변 환경과 현수막의 분위기가 의도적으로 어울리게 구성된 것으로 보임.",
+    notes: "꽃 테두리를 넣었다. 금지 문구를 예쁘게 포장하면 사람들이 더 잘 지킨다고 믿는 사람. 화가 나지 않았거나, 화를 숨기기로 결심한 사람."
+  },
+  {
+    id: "017",
+    file: "images/017.jpg",
+    text: "당기세요!! (동일 문구 10회 반복)",
+    emotion: "유머",
+    material: "A4 용지에 디지털 인쇄. 동일한 문구가 10줄 반복 인쇄됨. 코팅 없이 유리문에 직접 부착.",
+    environment: "편의점(GS25) 투명 유리 출입문 내부. 문 너머로 매장 내부가 보임. 반복된 텍스트가 유리를 통해 바깥에서도 읽힘.",
+    notes: "한 번으로 안 된다는 걸 알지만, 열 번을 쓰면서 이미 스스로도 웃고 있었을 것이다. 절박함이 어느 지점에서 농담이 되는 순간."
+  },
+  {
+    id: "018",
+    file: "images/018.jpg",
+    text: "주차금지 / 빠져나올 길 없음 / 29일 어려운 사정",
+    emotion: "호소",
+    material: "여러 장의 A4 및 소형 종이에 수기로 각각 작성. 테이프로 문 표면에 겹쳐 부착됨. 서체와 잉크 농도가 달라 서로 다른 시점에 작성된 것으로 보임.",
+    environment: "노란 페인트 철문. 체인으로 잠겨 있으며 문 전체에 여러 장의 메모가 층층이 붙어 있음. 문 앞 좁은 통로로, 실제로 차가 막히면 진퇴양난인 구조.",
+    notes: "한 번에 쓴 게 아니다. 상황이 반복될 때마다 메모를 추가한 것이다. 가장 마지막에 붙인 '29일 어려운 사정'에서 이 사람이 더 이상 단호하지 않다는 걸 알 수 있다."
+  }
+];
+
+const emotionColors = {
+  분노: '#c0392b', 호소: '#2980b9', 유머: '#f39c12',
+  명령: '#2c3e50', 경고: '#e67e22', 위협: '#8e44ad',
+  친근: '#27ae60', 냉소: '#7f8c8d'
+};
+
+let currentFilter = '전체';
+
+function renderGrid() {
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+  let visible = 0;
+
+  data.forEach((item, i) => {
+    const show = currentFilter === '전체' || item.emotion === currentFilter;
+    if (show) visible++;
+
+    const card = document.createElement('div');
+    card.className = 'card' + (show ? '' : ' hidden');
+    card.innerHTML = `
+      <div class="card-img">
+        <img src="${item.file}" alt="${item.text}" onerror="this.classList.add('broken')">
+        <div class="placeholder-text">${item.text}</div>
+      </div>
+      <div class="card-body">
+        <span class="card-tag emotion-${item.emotion}" style="background:${emotionColors[item.emotion]}">${item.emotion}</span>
+        <div class="card-text">${item.text}</div>
+        <div class="card-meta">
+          <span>${item.material.split(' ')[0]}</span>
+          <span>${item.location}</span>
+        </div>
+      </div>
+    `;
+    card.addEventListener('click', () => openModal(i));
+    grid.appendChild(card);
+  });
+
+  document.getElementById('visible-count').textContent = `${visible}개 표시 중`;
+}
+
+function openModal(index) {
+  const item = data[index];
+  const overlay = document.getElementById('modal-overlay');
+  const box = document.getElementById('modal-content-box');
+
+  box.innerHTML = `
+    <div class="modal-img">
+      <img src="${item.file}" alt="${item.text}" onerror="this.classList.add('broken')">
+      <div class="placeholder-text">${item.text}</div>
+    </div>
+    <div class="modal-content">
+      <span class="modal-tag" style="background:${emotionColors[item.emotion]}">${item.emotion}</span>
+      <div class="modal-text">${item.text}</div>
+      <div class="modal-fields">
+        <div class="modal-field">
+          <label>재료 및 기법</label>
+          <p>${item.material}</p>
+        </div>
+        <div class="modal-field">
+          <label>설치 환경</label>
+          <p>${item.environment}</p>
+        </div>
+        <div class="modal-field">
+          <label>작성자에 대한 추론</label>
+          <p>${item.notes}</p>
+        </div>
+      </div>
+    </div>
+  `;
+  overlay.classList.add('open');
+}
+
+document.getElementById('modal-overlay').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget || e.target.id === 'modal-close') {
+    document.getElementById('modal-overlay').classList.remove('open');
+  }
+});
+
+document.querySelectorAll('.tag-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tag-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentFilter = btn.dataset.tag;
+    renderGrid();
+  });
+});
+
+renderGrid();
+</script>
+</body>
+</html>

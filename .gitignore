@@ -1,0 +1,4 @@
+cutouts_backup/
+images/
+.DS_Store
+remove_bg.py
