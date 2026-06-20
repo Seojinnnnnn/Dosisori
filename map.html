@@ -670,11 +670,9 @@
   .view-btn.active         { background: #fff; color: #0a0a0a; border-color: #0a0a0a; }
   .view-btn.active:hover   { background: #ddd; color: #0a0a0a; border-color: #0a0a0a; }
 
-  /* dots-overview 모드 */
+  /* dots-overview 모드: fixed로 전환 → viewport 직접 기준, layer transform 무관 */
   body.dots-overview .map-dot {
-    transition: left 0.65s cubic-bezier(0.34,1.1,0.64,1),
-                top  0.65s cubic-bezier(0.34,1.1,0.64,1),
-                transform 0.5s cubic-bezier(0.34,1.1,0.64,1);
+    position: fixed !important;
   }
   /* 확대/축소 버튼 비활성화 */
   body.dots-overview #zoom-controls {
@@ -2710,14 +2708,15 @@ function renderDots() {
     : data.filter(d => d.emotion === activeFilter).length;
   // (count display removed)
 
-  // overview 모드 유지: renderDots 후 위치 재적용
+  // overview 모드 유지: renderDots 후 fixed 위치 즉시 재적용 (transition 없이)
   if (document.body.classList.contains('dots-overview') && window._overviewPositions) {
     document.querySelectorAll('.map-dot').forEach(dot => {
       const pos = window._overviewPositions[dot.dataset.id];
       if (pos) {
-        dot.style.left      = pos.left;
-        dot.style.top       = pos.top;
-        dot.style.transform = pos.transform;
+        dot.style.transition = 'none';
+        dot.style.left       = pos.left;
+        dot.style.top        = pos.top;
+        dot.style.transform  = pos.transform;
       }
     });
   }
@@ -3152,80 +3151,104 @@ initZoomButtons();
       _savedOffX = panoOffset;
       _savedOffY = panoOffsetY;
 
-      // 레이어 원점 고정 (스크롤 초기화)
+      // 레이어 원점 고정
       zoomLevel = 1.0;
       panoTarget = panoOffset = 0;
       panoTargetY = panoOffsetY = 0;
       layer.style.transform = `scale(1) translateX(0px) translateY(0px)`;
       if (label) label.textContent = '100%';
 
-      // 화면 전체에 랜덤 배치 (겹침 최소화)
-      // overview 모드: transform을 중앙 앵커로 교체 → ty가 시각 중심과 정확히 일치
       const mg  = 60;
-      const mgV = 80; // 상하 여백
+      const mgV = 80;
       const W   = window.innerWidth;
       const H   = window.innerHeight;
       const placed = [];
-      const MIN_D  = 70;
+      const MIN_D  = 80;
 
       window._overviewPositions = {};
 
-      dots.forEach(dot => {
-        dot.dataset.origLeft      = dot.style.left;
-        dot.dataset.origTop       = dot.style.top;
-        dot.dataset.origTransform = dot.style.transform;
+      // ── Phase 1: 현재 viewport 위치를 읽기 (reflow 한 번) ──────────────
+      const snapshots = dots.map(dot => {
+        const rect = dot.getBoundingClientRect();
+        return {
+          origLeft:      dot.style.left,
+          origTop:       dot.style.top,
+          origTransform: dot.style.transform,
+          // 현재 화면 위치(비주얼 중앙 기준)
+          vx: rect.left + rect.width  / 2,
+          vy: rect.top  + rect.height / 2,
+        };
+      });
 
-        // 중앙 앵커 + scale(0.4)을 transform 하나로 처리 (CSS scale 속성 제거됨)
-        const curT = dot.style.transform || '';
-        const rotMatch = curT.match(/rotate\(([^)]+)\)/);
-        const rotStr = rotMatch ? ` rotate(${rotMatch[1]})` : '';
+      // ── Phase 2: transition 없이 fixed 위치 고정 (시각 점프 없음) ──────
+      dots.forEach((dot, i) => {
+        const s = snapshots[i];
+        dot.dataset.origLeft      = s.origLeft;
+        dot.dataset.origTop       = s.origTop;
+        dot.dataset.origTransform = s.origTransform;
+
+        dot.style.transition = 'none';
+        // fixed 전환: 비주얼 중앙을 translate(-50%,-50%)로 맞추기 위해
+        // left/top = vx/vy 그대로 사용 (position:fixed가 CSS에서 걸림)
+        dot.style.left      = s.vx + 'px';
+        dot.style.top       = s.vy + 'px';
+        dot.style.transform = 'translate(-50%, -50%)';
+      });
+
+      // ── Phase 3: reflow 1회 ─────────────────────────────────────────────
+      void document.body.offsetHeight;
+
+      // ── Phase 4: 목표 위치로 애니메이션 ────────────────────────────────
+      const EASE = 'cubic-bezier(0.34,1.1,0.64,1)';
+      dots.forEach((dot, i) => {
+        const s = snapshots[i];
+        const rotMatch = s.origTransform.match(/rotate\(([^)]+)\)/);
+        const rotStr   = rotMatch ? ` rotate(${rotMatch[1]})` : '';
         const ovTransform = `translate(-50%, -50%) scale(0.4)${rotStr}`;
-        dot.style.transform = ovTransform;
 
         let tx, ty, attempts = 0;
         do {
           tx = mg  + Math.random() * (W - mg  * 2);
           ty = mgV + Math.random() * (H - mgV * 2);
           attempts++;
-        } while (attempts < 40 && placed.some(p =>
+        } while (attempts < 60 && placed.some(p =>
           Math.abs(p.x - tx) < MIN_D && Math.abs(p.y - ty) < MIN_D
         ));
         placed.push({ x: tx, y: ty });
 
         window._overviewPositions[dot.dataset.id] = {
-          left: tx + 'px', top: ty + 'px',
-          transform: ovTransform
+          left: tx + 'px', top: ty + 'px', transform: ovTransform
         };
 
         const delay = (Math.random() * 0.25).toFixed(2);
-        dot.style.transitionDelay = delay + 's';
-        dot.style.left = tx + 'px';
-        dot.style.top  = ty + 'px';
+        dot.style.transition = `left 0.65s ${EASE} ${delay}s, top 0.65s ${EASE} ${delay}s, transform 0.5s ${EASE} ${delay}s`;
+        dot.style.left      = tx + 'px';
+        dot.style.top       = ty + 'px';
+        dot.style.transform = ovTransform;
       });
 
     } else {
-      // 흩어지기 애니메이션 (scatter)
+      // ── 오버뷰 OFF: absolute 복원 후 스냅백 ────────────────────────────
       dots.forEach(dot => {
-        dot.style.transition      = 'left 0.5s cubic-bezier(0.55,0,1,0.45), top 0.5s cubic-bezier(0.55,0,1,0.45)';
-        dot.style.transitionDelay = (Math.random() * 0.15).toFixed(2) + 's';
-        if (dot.dataset.origLeft)      dot.style.left      = dot.dataset.origLeft;
-        if (dot.dataset.origTop)       dot.style.top       = dot.dataset.origTop;
-        if (dot.dataset.origTransform) dot.style.transform = dot.dataset.origTransform;
+        dot.style.transition = 'none';
+        dot.style.left       = dot.dataset.origLeft      || dot.style.left;
+        dot.style.top        = dot.dataset.origTop       || dot.style.top;
+        dot.style.transform  = dot.dataset.origTransform || dot.style.transform;
+        // position: fixed → absolute 복원 (CSS 클래스가 사라지면 자동 복원)
       });
 
-      // 애니메이션 끝난 후 원래 줌/패닝 복원
       window._overviewPositions = null;
+
       setTimeout(() => {
         dots.forEach(dot => {
-          dot.style.transition      = '';
-          dot.style.transitionDelay = '';
+          dot.style.transition = '';
         });
         zoomLevel = _savedZoom;
         panoTarget = panoOffset = _savedOffX;
         panoTargetY = panoOffsetY = _savedOffY;
         layer.style.transform = `scale(${zoomLevel}) translateX(-${panoOffset}px) translateY(-${panoOffsetY}px)`;
         if (label) label.textContent = Math.round(zoomLevel * 100) + '%';
-      }, 700);
+      }, 100);
     }
   });
 
