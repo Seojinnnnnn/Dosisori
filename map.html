@@ -2853,7 +2853,7 @@ function openPanel(id) {
   panel.style.setProperty('--panel-color', color);
 
   // 데이터 채우기
-  document.getElementById('panel-img-el').src = item.file;
+  document.getElementById('panel-img-el').src = item.file.replace('images/', 'cutouts/').replace('.jpg', '.png');
   document.getElementById('panel-text').textContent     = SIGN_CONTENT[item.id] || item.notes || '—';
   document.getElementById('panel-title-en').textContent = emotionEN[item.emotion] || item.emotion;
 
