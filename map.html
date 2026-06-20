@@ -670,6 +670,18 @@
   .view-btn.active         { background: #fff; color: #0a0a0a; border-color: #0a0a0a; }
   .view-btn.active:hover   { background: #ddd; color: #0a0a0a; border-color: #0a0a0a; }
 
+  /* dots-overview 모드 */
+  body.dots-overview .map-dot {
+    transition: left 0.65s cubic-bezier(0.34,1.1,0.64,1),
+                top  0.65s cubic-bezier(0.34,1.1,0.64,1),
+                transform 0.5s cubic-bezier(0.34,1.1,0.64,1);
+  }
+  /* 확대/축소 버튼 비활성화 */
+  body.dots-overview #zoom-controls {
+    opacity: 0.25;
+    pointer-events: none;
+  }
+
   /* dots-glow 모드: 모든 dot에 감정 글로우 + 살짝 확대 */
   body.dots-glow .map-dot:hover .dot-inner {
     transform: scale(1.1) translateY(-2px);
@@ -889,6 +901,7 @@
 
 <!-- 뷰 토글 버튼 (왼쪽) -->
 <div class="view-controls" id="view-controls">
+  <button class="view-btn" id="btn-overview" title="모아보기">□</button>
   <button class="view-btn" id="btn-glow" title="글로우 모드">○</button>
   <button class="view-btn" id="btn-text" title="텍스트 모드">t</button>
 </div>
@@ -2437,9 +2450,11 @@ function startPanoLoop() {
   if (panoRafId) return;
   const layer = document.getElementById('dot-layer');
   function loop() {
-    panoOffset  += (panoTarget  - panoOffset)  * 0.07;
-    panoOffsetY += (panoTargetY - panoOffsetY) * 0.07;
-    layer.style.transform = `scale(${zoomLevel}) translateX(-${panoOffset}px) translateY(-${panoOffsetY}px)`;
+    if (!document.body.classList.contains('dots-overview')) {
+      panoOffset  += (panoTarget  - panoOffset)  * 0.07;
+      panoOffsetY += (panoTargetY - panoOffsetY) * 0.07;
+      layer.style.transform = `scale(${zoomLevel}) translateX(-${panoOffset}px) translateY(-${panoOffsetY}px)`;
+    }
     panoRafId = requestAnimationFrame(loop);
   }
   loop();
@@ -2694,6 +2709,18 @@ function renderDots() {
     ? data.length
     : data.filter(d => d.emotion === activeFilter).length;
   // (count display removed)
+
+  // overview 모드 유지: renderDots 후 위치 재적용
+  if (document.body.classList.contains('dots-overview') && window._overviewPositions) {
+    document.querySelectorAll('.map-dot').forEach(dot => {
+      const pos = window._overviewPositions[dot.dataset.id];
+      if (pos) {
+        dot.style.left      = pos.left;
+        dot.style.top       = pos.top;
+        dot.style.transform = pos.transform;
+      }
+    });
+  }
 }
 
 // ── PANEL ─────────────────────────────────────────────────────────────
@@ -3105,8 +3132,102 @@ initZoomButtons();
 
 // ── 뷰 토글 버튼 ────────────────────────────────────────────────────────
 (function initViewButtons() {
+  const btnOverview = document.getElementById('btn-overview');
   const btnGlow = document.getElementById('btn-glow');
   const btnText = document.getElementById('btn-text');
+
+  let _savedZoom = 1.0, _savedOffX = 0, _savedOffY = 0;
+
+  btnOverview.addEventListener('click', () => {
+    const on = document.body.classList.toggle('dots-overview');
+    btnOverview.classList.toggle('active', on);
+
+    const layer  = document.getElementById('dot-layer');
+    const label  = document.getElementById('zoom-label');
+    const dots   = Array.from(document.querySelectorAll('.map-dot'));
+
+    if (on) {
+      // 현재 상태 저장
+      _savedZoom = zoomLevel;
+      _savedOffX = panoOffset;
+      _savedOffY = panoOffsetY;
+
+      // 레이어 원점 고정 (스크롤 초기화)
+      zoomLevel = 1.0;
+      panoTarget = panoOffset = 0;
+      panoTargetY = panoOffsetY = 0;
+      layer.style.transform = `scale(1) translateX(0px) translateY(0px)`;
+      if (label) label.textContent = '100%';
+
+      // 화면 전체에 랜덤 배치 (겹침 최소화)
+      // overview 모드: transform을 중앙 앵커로 교체 → ty가 시각 중심과 정확히 일치
+      const mg  = 60;
+      const mgV = 80; // 상하 여백
+      const W   = window.innerWidth;
+      const H   = window.innerHeight;
+      const placed = [];
+      const MIN_D  = 70;
+
+      window._overviewPositions = {};
+
+      dots.forEach(dot => {
+        dot.dataset.origLeft      = dot.style.left;
+        dot.dataset.origTop       = dot.style.top;
+        dot.dataset.origTransform = dot.style.transform;
+
+        // 중앙 앵커 + scale(0.4)을 transform 하나로 처리 (CSS scale 속성 제거됨)
+        const curT = dot.style.transform || '';
+        const rotMatch = curT.match(/rotate\(([^)]+)\)/);
+        const rotStr = rotMatch ? ` rotate(${rotMatch[1]})` : '';
+        const ovTransform = `translate(-50%, -50%) scale(0.4)${rotStr}`;
+        dot.style.transform = ovTransform;
+
+        let tx, ty, attempts = 0;
+        do {
+          tx = mg  + Math.random() * (W - mg  * 2);
+          ty = mgV + Math.random() * (H - mgV * 2);
+          attempts++;
+        } while (attempts < 40 && placed.some(p =>
+          Math.abs(p.x - tx) < MIN_D && Math.abs(p.y - ty) < MIN_D
+        ));
+        placed.push({ x: tx, y: ty });
+
+        window._overviewPositions[dot.dataset.id] = {
+          left: tx + 'px', top: ty + 'px',
+          transform: ovTransform
+        };
+
+        const delay = (Math.random() * 0.25).toFixed(2);
+        dot.style.transitionDelay = delay + 's';
+        dot.style.left = tx + 'px';
+        dot.style.top  = ty + 'px';
+      });
+
+    } else {
+      // 흩어지기 애니메이션 (scatter)
+      dots.forEach(dot => {
+        dot.style.transition      = 'left 0.5s cubic-bezier(0.55,0,1,0.45), top 0.5s cubic-bezier(0.55,0,1,0.45)';
+        dot.style.transitionDelay = (Math.random() * 0.15).toFixed(2) + 's';
+        if (dot.dataset.origLeft)      dot.style.left      = dot.dataset.origLeft;
+        if (dot.dataset.origTop)       dot.style.top       = dot.dataset.origTop;
+        if (dot.dataset.origTransform) dot.style.transform = dot.dataset.origTransform;
+      });
+
+      // 애니메이션 끝난 후 원래 줌/패닝 복원
+      window._overviewPositions = null;
+      setTimeout(() => {
+        dots.forEach(dot => {
+          dot.style.transition      = '';
+          dot.style.transitionDelay = '';
+        });
+        zoomLevel = _savedZoom;
+        panoTarget = panoOffset = _savedOffX;
+        panoTargetY = panoOffsetY = _savedOffY;
+        layer.style.transform = `scale(${zoomLevel}) translateX(-${panoOffset}px) translateY(-${panoOffsetY}px)`;
+        if (label) label.textContent = Math.round(zoomLevel * 100) + '%';
+      }, 700);
+    }
+  });
 
   btnGlow.addEventListener('click', () => {
     const on = document.body.classList.toggle('dots-glow');
@@ -3125,6 +3246,11 @@ initZoomButtons();
       btnGlow.classList.remove('active');
     }
   });
+
+  // 페이지 로드 시 모아보기 기본 활성화
+  setTimeout(() => {
+    btnOverview.click();
+  }, 120);
 })();
 
 let _resizeTimer = null;
