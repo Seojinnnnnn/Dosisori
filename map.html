@@ -531,6 +531,31 @@
     color: #0a0a0a;
   }
 
+  /* ── 패널 첫 진입 인스트럭션 ───────────────────────────────────────── */
+  #panel-intro {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    background: rgba(0, 0, 0, 0.58);
+    cursor: pointer;
+    display: none;
+    opacity: 1;
+    transition: opacity 0.4s ease;
+    font-family: 'Noto Sans KR', sans-serif;
+  }
+  #panel-intro.visible { display: block; }
+  #panel-intro.hiding  { opacity: 0; pointer-events: none; }
+
+  /* 패널 인스트럭션 — 라벨이 왼쪽, 선, 점이 오른쪽 */
+  .anno-r {
+    flex-direction: row-reverse;
+  }
+  .anno-r .anno-label {
+    padding-left: 0;
+    padding-right: 8px;
+    text-align: right;
+  }
+
   /* 키워드 연관 팝업 — 메인 패널 바로 왼쪽 */
   .keyword-panel {
     position: fixed;
@@ -674,7 +699,24 @@
   body.dots-overview .map-dot {
     position: fixed !important;
     pointer-events: auto;
-    transform-origin: center center !important; /* center bottom 오버라이드 — 핵심 */
+    transform-origin: center center !important;
+    z-index: 26; /* emo-panel(25) 위로 — 패널 근처 아이콘도 클릭 가능 */
+  }
+  /* 히트 영역 확장: scale(0.4) 상태에서 after는 40% 크기로 축소되므로
+     inset: -60px → 시각적으로 약 24px 여유 확보 */
+  body.dots-overview .map-dot::after {
+    content: '';
+    position: absolute;
+    inset: -60px;
+    cursor: pointer;
+  }
+  /* 호버: 살짝 커지고 감정 글로우 유지 */
+  body.dots-overview .map-dot:hover {
+    z-index: 200 !important;
+  }
+  body.dots-overview .map-dot:hover .dot-inner img {
+    transform: scale(1.2);
+    filter: drop-shadow(0 0 6px var(--glow)) drop-shadow(0 0 20px var(--glow-mid)) drop-shadow(2px 4px 8px rgba(0,0,0,0.45));
   }
   /* 확대/축소 버튼 비활성화 */
   body.dots-overview #zoom-controls {
@@ -723,6 +765,142 @@
   body.dots-text .map-dot:hover .dot-label[data-emotion="유머"] { background: #000; color: #FFD200; }
   body.dots-text .map-dot:hover .dot-label[data-emotion="환대"] { background: #000; color: #00E07A; }
 
+  /* ── 인스트럭션 오버레이 ────────────────────────────────────────────── */
+  #intro-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    background: rgba(0, 0, 0, 0.58);
+    cursor: pointer;
+    opacity: 1;
+    transition: opacity 0.5s ease;
+    font-family: 'Noto Sans KR', sans-serif;
+  }
+  #intro-overlay.hiding {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  /* annotation 공통 */
+  .anno {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    gap: 0;
+    pointer-events: none;
+    user-select: none;
+  }
+  .anno-dot {
+    flex-shrink: 0;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.75);
+  }
+  .anno-line {
+    flex-shrink: 0;
+    height: 1px;
+    background: rgba(255,255,255,0.45);
+  }
+  .anno-label {
+    padding-left: 6px;
+    white-space: nowrap;
+    font-family: 'Noto Sans KR', sans-serif;
+  }
+  .anno-label strong {
+    display: block;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: #fff;
+    letter-spacing: 0.01em;
+    margin-bottom: 2px;
+  }
+  .anno-label span {
+    display: block;
+    font-size: 11.5px;
+    color: #fff;
+    line-height: 1.5;
+  }
+
+  /* 왼쪽 방향 annotation (선이 왼쪽 → 오른쪽으로, 텍스트가 왼쪽) */
+  .anno-left {
+    flex-direction: row-reverse;
+  }
+  .anno-left .anno-label {
+    padding-left: 0;
+    padding-right: 10px;
+    text-align: right;
+  }
+
+  /* 파노라마 안내 */
+  .intro-pano {
+    position: absolute;
+    bottom: 11%;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    pointer-events: none;
+    user-select: none;
+  }
+  .intro-pano-arrow {
+    font-size: 18px;
+    color: rgba(255,255,255,0.55);
+  }
+  .intro-pano-text {
+    text-align: center;
+  }
+  .intro-pano-text strong {
+    display: block;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: #fff;
+    letter-spacing: 0.04em;
+    font-family: 'Noto Sans KR', sans-serif;
+  }
+  .intro-pano-text span {
+    display: block;
+    font-size: 11.5px;
+    color: #fff;
+    margin-top: 2px;
+    font-family: 'Noto Sans KR', sans-serif;
+  }
+
+  /* 상단 프로젝트 헤더 */
+  .intro-header {
+    position: absolute;
+    top: 9%;
+    left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+    pointer-events: none;
+    user-select: none;
+    white-space: nowrap;
+  }
+  .intro-header-desc {
+    font-size: 11.5px;
+    color: #fff;
+    line-height: 1.7;
+    letter-spacing: 0.01em;
+    font-family: 'Noto Sans KR', sans-serif;
+  }
+
+  /* 상단 클릭 안내 */
+  .intro-cta {
+    position: absolute;
+    top: 28px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 11.5px;
+    letter-spacing: 0.1em;
+    color: rgba(255,255,255,0.35);
+    font-family: 'Noto Sans KR', sans-serif;
+    pointer-events: none;
+    user-select: none;
+    white-space: nowrap;
+  }
+
   /* ── 확대/축소 버튼 ──────────────────────────────────────────────────── */
   .zoom-controls {
     position: fixed;
@@ -765,6 +943,79 @@
 </style>
 </head>
 <body>
+
+<!-- ── 첫 방문 인스트럭션 오버레이 ──────────────────────────────────────── -->
+<div id="intro-overlay">
+
+  <!-- 도시의 목소리 로고 annotation -->
+  <div class="anno" style="left: 170px; top: 54px;">
+    <div class="anno-dot"></div>
+    <div class="anno-line" style="width:60px;"></div>
+    <div class="anno-label">
+      <strong>도시의 목소리</strong>
+      <span>로고를 클릭하면 프로젝트 소개를 볼 수 있습니다.</span>
+    </div>
+  </div>
+
+  <!-- 감정 필터 패널 annotation — emo-row 우측 끝에 붙임 -->
+  <div class="anno" style="left: 160px; top: 210px;">
+    <div class="anno-dot"></div>
+    <div class="anno-line" style="width:60px;"></div>
+    <div class="anno-label">
+      <strong>감정 필터</strong>
+      <span>태그를 선택해 감정별로<br>안내문을 필터링합니다.</span>
+    </div>
+  </div>
+
+  <!-- 중앙 안내문 아이콘 annotation -->
+  <div class="anno" style="left: 54%; top: 48%;">
+    <div class="anno-dot"></div>
+    <div class="anno-line" style="width:70px;"></div>
+    <div class="anno-label">
+      <strong>안내문 클릭</strong>
+      <span>아이콘을 클릭하면 해당 안내문의<br>사진과 상세 정보를 확인합니다.</span>
+    </div>
+  </div>
+
+  <!-- □ 모아보기 버튼 annotation (버튼 우측끝 62px + 15px = 77px) -->
+  <div class="anno" style="left: 77px; bottom: 146px; transform: translateY(50%);">
+    <div class="anno-dot"></div>
+    <div class="anno-line" style="width:60px;"></div>
+    <div class="anno-label">
+      <strong>모아보기</strong>
+      <span>전체 안내문을 한 화면에 펼쳐봅니다.</span>
+    </div>
+  </div>
+
+  <!-- ○ 감정 색상 버튼 annotation -->
+  <div class="anno" style="left: 77px; bottom: 96px; transform: translateY(50%);">
+    <div class="anno-dot"></div>
+    <div class="anno-line" style="width:60px;"></div>
+    <div class="anno-label">
+      <strong>감정 색상 모드</strong>
+      <span>감정에 따른 색상 원으로 시각화합니다.</span>
+    </div>
+  </div>
+
+  <!-- t 텍스트 버튼 annotation -->
+  <div class="anno" style="left: 77px; bottom: 46px; transform: translateY(50%);">
+    <div class="anno-dot"></div>
+    <div class="anno-line" style="width:60px;"></div>
+    <div class="anno-label">
+      <strong>텍스트 모드</strong>
+      <span>안내문 텍스트 라벨을 지도에 표시합니다.</span>
+    </div>
+  </div>
+
+  <!-- 파노라마 탐색 안내 -->
+  <div class="intro-pano">
+    <div class="intro-pano-text">
+      <strong>파노라마 탐색</strong>
+      <span>드래그하여 좌우로 이동 · 휠로 확대·축소</span>
+    </div>
+  </div>
+
+</div>
 
 <div id="wall-bg"></div>
 
@@ -921,6 +1172,62 @@
 </div>
 
 <div class="panel" id="panel">
+
+  <!-- 패널 첫 진입 인스트럭션 오버레이 (풀스크린 fixed) -->
+  <div id="panel-intro">
+
+    <!-- 닫기 버튼 (× button: position:fixed right:40vw top:0 width:44px) -->
+    <!-- anno-r → 라벨이 왼쪽(파노라마 영역), 점이 × 버튼 위 -->
+    <div class="anno anno-r" style="right: calc(40vw + 8px); top: 22px;">
+      <div class="anno-dot"></div>
+      <div class="anno-line" style="width:55px;"></div>
+      <div class="anno-label">
+        <strong>닫기</strong>
+        <span>패널을 닫습니다.</span>
+      </div>
+    </div>
+
+    <!-- 헤더: 안내문 텍스트 + 감정 (panel top: 0~80px, right panel) -->
+    <div class="anno anno-r" style="right: 18px; top: 44px;">
+      <div class="anno-dot"></div>
+      <div class="anno-line" style="width:55px;"></div>
+      <div class="anno-label">
+        <strong>안내문 텍스트 + 감정</strong>
+        <span>수집된 안내문의 내용과<br>감정 분류를 확인합니다.</span>
+      </div>
+    </div>
+
+    <!-- 원본 사진 (panel-photo: 80px ~ 65% 영역) -->
+    <div class="anno anno-r" style="right: 18px; top: 38%;">
+      <div class="anno-dot"></div>
+      <div class="anno-line" style="width:55px;"></div>
+      <div class="anno-label">
+        <strong>원본 사진</strong>
+        <span>현장에서 촬영한<br>안내문 원본입니다.</span>
+      </div>
+    </div>
+
+    <!-- 키워드 네모 박스 (panel-analysis 상단부) -->
+    <div class="anno anno-r" style="right: 18px; bottom: 120px;">
+      <div class="anno-dot"></div>
+      <div class="anno-line" style="width:55px;"></div>
+      <div class="anno-label">
+        <strong>키워드 태그</strong>
+        <span>클릭하면 같은 키워드의<br>다른 안내문을 함께 볼 수 있습니다.</span>
+      </div>
+    </div>
+
+    <!-- 수집 데이터 (panel-analysis 하단부) -->
+    <div class="anno anno-r" style="right: 18px; bottom: 55px;">
+      <div class="anno-dot"></div>
+      <div class="anno-line" style="width:55px;"></div>
+      <div class="anno-label">
+        <strong>수집 데이터</strong>
+        <span>서체 유형 · 재질 · 촬영 환경<br>분류 정보입니다.</span>
+      </div>
+    </div>
+
+  </div>
 
   <!-- 메인 콘텐츠 -->
   <div class="panel-main">
@@ -2710,11 +3017,12 @@ function renderDots() {
     : data.filter(d => d.emotion === activeFilter).length;
   // (count display removed)
 
-  // overview 모드 유지: renderDots 후 fixed 위치 즉시 재적용
+  // overview 모드 유지: renderDots 후 body로 이동 + 위치 재적용
   if (document.body.classList.contains('dots-overview') && window._overviewPositions) {
     document.querySelectorAll('.map-dot').forEach(dot => {
       const pos = window._overviewPositions[dot.dataset.id];
       if (pos) {
+        document.body.appendChild(dot);  // body로 이동 (z-index 탈출)
         dot.style.transition = 'none';
         dot.style.position   = 'fixed';
         dot.style.left       = pos.left;
@@ -2891,6 +3199,17 @@ function openPanel(id) {
   analysisEl.innerHTML = buildAnalysis(item);
   panel.classList.add('open');
   document.body.classList.add('panel-open');
+
+  // 패널 첫 진입 인스트럭션
+  if (!window._panelIntroDone) {
+    const pi = document.getElementById('panel-intro');
+    pi.classList.add('visible');
+    pi.addEventListener('click', function() {
+      pi.classList.add('hiding');
+      setTimeout(() => { pi.classList.remove('visible', 'hiding'); }, 400);
+      window._panelIntroDone = true;
+    }, { once: true });
+  }
 
   renderDots();
   // 스크롤 맨 위로
@@ -3158,7 +3477,7 @@ initZoomButtons();
       zoomLevel = 1.0;
       panoTarget = panoOffset = 0;
       panoTargetY = panoOffsetY = 0;
-      layer.style.transform = `scale(1) translateX(0px) translateY(0px)`;
+      layer.style.transform = 'none'; // transform 제거 → 새 스태킹 컨텍스트 안 생김 → dot z-index가 루트에서 직접 동작
       if (label) label.textContent = '100%';
 
       const W  = window.innerWidth;
@@ -3211,7 +3530,10 @@ initZoomButtons();
           left: tx + 'px', top: ty + 'px', transform: ovTransform
         };
 
-        // inline position:fixed → layer transform 완전히 무시, viewport 좌표 직접 지정
+        // dot을 body로 이동 → dot-layer 스태킹 컨텍스트(z-index:5) 탈출
+        // → 루트에서 z-index:26으로 emo-panel(25) 위에 올라감
+        document.body.appendChild(dot);
+
         dot.style.transition = 'none';
         dot.style.position   = 'fixed';
         dot.style.left       = tx + 'px';
@@ -3220,10 +3542,11 @@ initZoomButtons();
       });
 
     } else {
-      // ── 오버뷰 OFF: absolute 복원 ────────────────────────────────────
+      // ── 오버뷰 OFF: dot을 layer로 복원 ──────────────────────────────
       dots.forEach(dot => {
+        layer.appendChild(dot);          // dot-layer로 돌려보내기
         dot.style.transition = 'none';
-        dot.style.position   = '';   // inline 제거 → CSS 기본값(absolute) 복원
+        dot.style.position   = '';
         dot.style.left       = dot.dataset.origLeft      || dot.style.left;
         dot.style.top        = dot.dataset.origTop       || dot.style.top;
         dot.style.transform  = dot.dataset.origTransform || dot.style.transform;
@@ -3277,6 +3600,22 @@ window.addEventListener('resize', () => {
 });
 
 // ── 제보 데이터 → 지도에 로드 (업로드 기능 제거됨)
+
+// ── 첫 방문 인스트럭션 오버레이 ────────────────────────────────────────
+(function() {
+  const overlay = document.getElementById('intro-overlay');
+  if (!overlay) return;
+  function dismiss() {
+    overlay.classList.add('hiding');
+    setTimeout(() => overlay.remove(), 500);
+  }
+  overlay.addEventListener('click', dismiss);
+  // 키보드 아무 키 눌러도 닫힘
+  document.addEventListener('keydown', function onKey() {
+    dismiss();
+    document.removeEventListener('keydown', onKey);
+  }, { once: true });
+})();
 </script>
 </body>
 </html>
